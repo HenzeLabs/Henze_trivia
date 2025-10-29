@@ -1,0 +1,6 @@
+# Core dependencies
+pandas>=2.2.0
+python-dotenv>=1.0.0
+
+# OpenAI API (for question generation)
+openai>=1.0.0

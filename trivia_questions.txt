@@ -1,0 +1,83 @@
+TRIVIA QUESTIONS GENERATED FROM MESSAGE ANALYSIS
+============================================================
+
+Question 1: [Statistics]
+Who sent the most messages overall in these conversations?
+Answer: Benny
+Options: Benny, Lauren, Gina, Ian
+Fun Fact: Benny sent 2017 messages!
+
+------------------------------------------------------------
+
+Question 2: [Emojis]
+Who uses the most emojis in their messages?
+Answer: Lauren
+Options: Benny, Lauren, Gina, Ian
+Fun Fact: Lauren used 270 emojis!
+
+------------------------------------------------------------
+
+Question 3: [Habits]
+Who's most likely to send messages between midnight and 6 AM?
+Answer: Benny
+Options: Lauren, Benny, Gina, Ian
+Fun Fact: Benny sent 116 late-night messages!
+
+------------------------------------------------------------
+
+Question 4: [Personality]
+Who laughs the most in texts (lmao, haha, etc.)?
+Answer: Benny
+Options: Benny, Jackson, Ian, Lauren
+Fun Fact: Benny is always laughing!
+
+------------------------------------------------------------
+
+Question 5: [Interests]
+Who talks about dogs (Cranberry/Bentley) the most?
+Answer: Lauren
+Options: Benny, Jackson, Ian, Lauren
+Fun Fact: Lauren loves those pups!
+
+------------------------------------------------------------
+
+Question 6: [Who Said It?]
+Who said: "I only have my shitty Bluetooth ones ..."?
+Answer: Benny
+Options: Benny, Lauren
+Fun Fact: From: Lauren-Benny.csv
+
+------------------------------------------------------------
+
+Question 7: [Who Said It?]
+Who said: "￼Hahahha nvm I’ll do blue! I got us each one of these lol ..."?
+Answer: Benny
+Options: Benny, Lauren
+Fun Fact: From: Lauren-Benny.csv
+
+------------------------------------------------------------
+
+Question 8: [Who Said It?]
+Who said: "I just dropped cranberry off..."?
+Answer: Benny
+Options: Benny, Lauren
+Fun Fact: From: Lauren-Benny.csv
+
+------------------------------------------------------------
+
+Question 9: [Who Said It?]
+Who said: "They’re trying to make me go to fuuuuucking St. Louis for an in person meeting what the actual fuck ..."?
+Answer: Benny
+Options: Benny, Lauren
+Fun Fact: From: Lauren-Benny.csv
+
+------------------------------------------------------------
+
+Question 10: [Who Said It?]
+Who said: "with my boss like what the actual fuck such a waste of time ..."?
+Answer: Benny
+Options: Benny, Lauren
+Fun Fact: From: Lauren-Benny.csv
+
+------------------------------------------------------------
+

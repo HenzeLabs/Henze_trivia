@@ -1,0 +1,343 @@
+/**
+ * Henze Trivia Server (New Architecture)
+ * Uses GameRoom FSM, SQLite database, and proper state management
+ */
+
+// Load environment variables from .env file
+require("dotenv").config({
+  path: require("path").join(__dirname, "..", ".env"),
+});
+
+const { createServer } = require("http");
+const Sentry = require("./sentry");
+const helmet = require("helmet");
+const { Server } = require("socket.io");
+const { parse } = require("url");
+const next = require("next");
+const { exec } = require("child_process");
+const os = require("os");
+const { GameRoom, GameState } = require("./GameRoom");
+const validation = require("./validation");
+const logger = require("./logger");
+
+const dev = process.env.NODE_ENV !== "production";
+const hostname = process.env.HOST || "0.0.0.0";
+const port = parseInt(process.env.PORT || "3000", 10);
+
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+
+
+function startServer(portToTry) {
+  app.prepare()
+    .then(() => {
+      const server = createServer(async (req, res) => {
+        const helmetOptions =
+          process.env.NODE_ENV !== "production"
+            ? { contentSecurityPolicy: false }
+            : undefined;
+        helmet(helmetOptions)(req, res, async () => {
+          if (req.url === "/healthz" || req.url === "/status") {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "ok", timestamp: Date.now() }));
+            return;
+          }
+          if (
+            process.env.ENFORCE_HTTPS === "true" &&
+            req.headers["x-forwarded-proto"] !== "https"
+          ) {
+            const host = req.headers["host"];
+            res.writeHead(301, { Location: `https://${host}${req.url}` });
+            res.end();
+            return;
+          }
+          handle(req, res, parse(req.url, true));
+        });
+      });
+
+      const io = new Server(server, {
+        cors: {
+          origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+          methods: ["GET", "POST"],
+          credentials: true,
+        },
+      });
+
+      // ========================================================================
+      // SOCKET.IO GAME LOGIC
+      // ========================================================================
+      socket.on("player:start", async (payload, cb) => {
+        if (!rateLimitCheck(cb)) return;
+
+        try {
+          // Validate payload
+          const validationResult = validation.startSchema.safeParse(payload);
+          if (!validationResult.success) {
+            return cb({
+              error: "Invalid start payload.",
+              details: validationResult.error.errors,
+            });
+          }
+
+          // Verify token
+          if (payload.token !== gameRoom.token) {
+            return cb({ error: "Invalid token." });
+          }
+
+          // Local party game - no HOST_PIN needed!
+          // Anyone can start the game
+
+          // Start the game
+          gameRoom.startGame();
+
+          cb({ success: true });
+          broadcastGameState();
+        } catch (e) {
+          logger.error(`Start error`, {
+            error: e.message,
+            socketId: socket.id,
+          });
+          cb({
+            success: false,
+            error: e.message || "Start failed",
+          });
+        }
+      });
+
+      // ========================================================================
+      // PLAYER: SUBMIT ANSWER
+      // ========================================================================
+      socket.on("player:answer", async (payload, cb) => {
+        if (!rateLimitCheck(cb)) return;
+
+        try {
+          // Validate payload
+          const validationResult = validation.answerSchema.safeParse(payload);
+          if (!validationResult.success) {
+            return cb({
+              error: "Invalid payload",
+              details: validationResult.error.errors,
+            });
+          }
+
+          // Verify token
+          if (payload.token !== gameRoom.token) {
+            return cb({ error: "Invalid token" });
+          }
+
+          // Get player
+          const player = gameRoom.getPlayer(socket.id);
+          if (!player) {
+            return cb({ error: "Player not found" });
+          }
+
+          // Submit answer (now async with mutex)
+          await gameRoom.submitAnswer(player.id, payload.answer);
+
+          cb({ success: true });
+          broadcastGameState();
+        } catch (e) {
+          logger.error(`Answer error`, {
+            error: e.message,
+            socketId: socket.id,
+          });
+          cb({ success: false, error: e.message || "Answer failed" });
+        }
+      });
+
+      // ========================================================================
+      // PLAYER: VOTE FUNNY (laugh vote)
+      // ========================================================================
+      socket.on("player:laugh", async (payload, cb) => {
+        if (!rateLimitCheck(cb)) return;
+
+        try {
+          // Verify token
+          if (payload.token !== gameRoom.token) {
+            return cb({ error: "Invalid token" });
+          }
+
+          // Get player
+          const player = gameRoom.getPlayer(socket.id);
+          if (!player) {
+            return cb({ error: "Player not found" });
+          }
+
+          // Vote question as funny
+          gameRoom.voteQuestionFunny(player.id);
+
+          cb({ success: true });
+          broadcastGameState();
+        } catch (e) {
+          logger.error(`Laugh vote error`, {
+            error: e.message,
+            socketId: socket.id,
+          });
+          cb({ success: false, error: e.message || "Laugh vote failed" });
+        }
+      });
+
+      // ========================================================================
+      // PLAYER: RESET GAME
+      // ========================================================================
+      socket.on("player:reset", async (payload, cb) => {
+        if (!rateLimitCheck(cb)) return;
+
+        try {
+          // Validate payload
+          const validationResult = validation.resetSchema.safeParse(payload);
+          if (!validationResult.success) {
+            return cb({
+              error: "Invalid payload",
+              details: validationResult.error.errors,
+            });
+          }
+
+          // Verify token
+          if (payload.token !== gameRoom.token) {
+            return cb({ error: "Invalid token" });
+          }
+
+          // Verify HOST_PIN
+          if (!payload.hostPin || payload.hostPin !== process.env.HOST_PIN) {
+            return cb({ error: "Invalid or missing HOST_PIN" });
+          }
+
+          // Reset game
+          gameRoom.reset();
+
+          cb({ success: true });
+          broadcastGameState();
+        } catch (e) {
+          logger.error(`Reset error`, {
+            error: e.message,
+            socketId: socket.id,
+          });
+          cb({ success: false, error: e.message || "Reset failed" });
+        }
+      });
+
+      // ========================================================================
+      // PLAYER: RESTORE SESSION
+      // ========================================================================
+      socket.on("player:restore", async (payload, cb) => {
+        try {
+          // Validate payload
+          const validationResult = validation.restoreSchema.safeParse(payload);
+          if (!validationResult.success) {
+            return cb({
+              error: "Invalid payload",
+              details: validationResult.error.errors,
+            });
+          }
+
+          // Verify token
+          if (payload.token !== gameRoom.token) {
+            if (cb && typeof cb === "function") {
+              return cb({ error: "Invalid token or session expired" });
+            }
+            return;
+          }
+
+          // For now, just return current game state
+          // TODO: Implement proper session restoration if needed
+          if (cb && typeof cb === "function") {
+            cb({ success: true, game: gameRoom.getGameState() });
+          }
+        } catch (e) {
+          logger.error(`Restore error`, {
+            error: e.message,
+            socketId: socket.id,
+          });
+          if (cb && typeof cb === "function") {
+            cb({ success: false, error: e.message || "Restore failed" });
+          }
+        }
+      });
+
+      // ========================================================================
+      // DISCONNECT
+      // ========================================================================
+      socket.on("disconnect", () => {
+        logger.player(`Player disconnected`, { socketId: socket.id });
+        gameRoom.removePlayer(socket.id);
+        broadcastGameState();
+
+        // Cleanup rate limit
+        rateLimits.delete(socket.id);
+      });
+    });
+
+    // Start server with automatic port retry
+    const tryPort = (currentPort, maxAttempts = 10) => {
+      server.listen(currentPort, hostname)
+        .on('listening', () => {
+          const localIP = getLocalIP();
+
+          // Log to both console and logger
+          const banner =
+            "\n" +
+            "=".repeat(60) +
+            "\n" +
+            "🎮 HENZE TRIVIA SERVER\n" +
+            "=".repeat(60) +
+            "\n" +
+            `> Ready on http://${hostname}:${currentPort}\n` +
+            `> Local: http://localhost:${currentPort}\n`;
+
+          console.log(banner);
+          logger.info("🎮 Henze Trivia Server started", {
+            hostname,
+            port: currentPort,
+            env: process.env.NODE_ENV || "development",
+          });
+
+          if (hostname === "0.0.0.0") {
+            console.log(`\n📱 PLAYERS: http://${localIP}:${currentPort}`);
+            console.log(`📺 TV: http://${localIP}:${currentPort}/tv`);
+            logger.info("Network URLs", {
+              players: `http://${localIP}:${currentPort}`,
+              tv: `http://${localIP}:${currentPort}/tv`,
+            });
+          }
+          console.log("=".repeat(60) + "\n");
+
+          if (dev && process.platform === "darwin") {
+            exec(`open http://localhost:${currentPort}`);
+          }
+        })
+        .on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            const nextPort = currentPort + 1;
+            if (nextPort - portToTry >= maxAttempts) {
+              console.error(`❌ Could not find available port after ${maxAttempts} attempts (tried ${portToTry}-${currentPort})`);
+              process.exit(1);
+            }
+            console.log(`⚠️  Port ${currentPort} is busy, trying ${nextPort}...`);
+            tryPort(nextPort, maxAttempts);
+          } else {
+            console.error('❌ Server error:', err);
+            process.exit(1);
+          }
+        });
+    };
+
+    // Start with the configured port
+    tryPort(portToTry);
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      logger.info('SIGTERM signal received: closing HTTP server');
+      server.close(() => {
+        logger.info('HTTP server closed');
+      });
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
+
+// Start server with port 3000 (or from env)
+startServer(port);

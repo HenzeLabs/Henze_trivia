@@ -1,0 +1,16 @@
+
+# Ignore Vercel deployment folder
+.vercel
+
+# Ignore Next.js build output
+.next/
+
+# Ignore Python cache
+__pycache__/
+
+# Ignore output and logs
+output/
+logs/
+
+# Ignore node modules
+node_modules/
