@@ -475,6 +475,7 @@ export default function Home() {
         : "Everyone answered. Revealing results...";
     return (
       <QuestionScreen
+        playerId={playerId}
         currentQuestion={{
           ...currentQuestion,
           round,

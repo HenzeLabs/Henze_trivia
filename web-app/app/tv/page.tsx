@@ -41,7 +41,7 @@ export default function TVDisplay() {
       socket = io(baseUrl || "", { path: "/socket.io" });
 
       socket.on("connect", () => {
-        console.log("[TV] Socket connected", socket.id);
+        console.log("[TV] Socket connected", socket?.id);
         reconnectAttempts = 0;
       });
 
@@ -50,7 +50,7 @@ export default function TVDisplay() {
       });
 
       socket.on("disconnect", () => {
-        console.log("[TV] Socket disconnected", socket.id);
+        console.log("[TV] Socket disconnected", socket?.id);
         if (isMounted) {
           reconnectAttempts++;
           const delay = Math.min(2000 * Math.pow(2, reconnectAttempts), 15000);

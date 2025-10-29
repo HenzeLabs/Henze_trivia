@@ -28,6 +28,8 @@ interface QuestionScreenProps {
   difficultyLabel?: string;
   isReveal?: boolean;
   isPlayerDead?: boolean;
+  playerLives?: number;
+  maxLivesState?: number;
   selectedAnswer?: number | null;
   submitAnswer?: (i: number) => void;
   waitingHeadline?: string;
@@ -58,10 +60,11 @@ const QuestionScreen: React.FC<QuestionScreenProps> = (props) => {
     socket.on("game:update", (game: any) => {
       setGameState(game);
       if (game.state === "ASKING" && game.question) {
+        const currentPlayers = game.players || [];
         setWaitingMsg(
           getPersonalizedSavage("waiting", {
             playerName: props.playerId,
-            groupNames: players.map((p: any) => p.name),
+            groupNames: currentPlayers.map((p: any) => p.name),
           })
         );
       }
@@ -76,7 +79,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = (props) => {
     return () => {
       socket.off("game:update");
     };
-  }, [submitted]);
+  }, [submitted, props.playerId]);
 
   const handleSubmit = (i: number) => {
     setSelected(i);

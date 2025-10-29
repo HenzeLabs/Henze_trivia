@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { spawn } from "child_process";
 import path from "path";
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   // Path to the question generator script
   const scriptPath = path.resolve(
     process.cwd(),
     "../../utils/question_generator.py"
   );
 
-  return new Promise((resolve) => {
+  return new Promise<Response>((resolve) => {
     const py = spawn("python3", [scriptPath]);
     let data = "";
     py.stdout.on("data", (chunk) => {
