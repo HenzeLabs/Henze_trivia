@@ -33,6 +33,15 @@ const port = parseInt(process.env.PORT || "3000", 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
+// Seed database if empty (for first deploy on Render)
+const questionCheckQuery = db.db.prepare("SELECT COUNT(*) as count FROM questions");
+const { count } = questionCheckQuery.get();
+if (count === 0) {
+  logger.info("🌱 Database is empty, seeding with initial questions...");
+  require("./seed-database-inline")();
+  logger.info("✅ Database seeded successfully");
+}
+
 // Initialize game room
 let gameRoom = new GameRoom();
 
