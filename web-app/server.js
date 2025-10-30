@@ -27,7 +27,8 @@ const logger = require("./logger");
 const validation = require("./validation");
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOSTNAME || "0.0.0.0";
+// Always bind to 0.0.0.0 in production (Render sets HOSTNAME to container name)
+const hostname = dev ? "localhost" : "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const app = next({ dev, hostname, port });
@@ -430,8 +431,12 @@ app
 
     // Start server
     server.listen(port, hostname, (err) => {
-      if (err) throw err;
+      if (err) {
+        logger.error("Failed to start server", { error: err.message });
+        throw err;
+      }
       const localIP = getLocalIP();
+      logger.info(`Server binding to ${hostname}:${port}`);
       const banner =
         "\n" +
         "=".repeat(60) +
