@@ -1,381 +1,432 @@
 "use client";
-import { useState, useEffect } from "react";
-import { io, Socket } from "socket.io-client";
-import "./tv-styles.css";
 
-export default function TVDisplay() {
+import React, { useEffect, useState } from "react";
+import io from "socket.io-client";
+
+export default function TVPage() {
+  const [socket, setSocket] = useState<any>(null);
   const [gameState, setGameState] = useState("lobby");
   const [players, setPlayers] = useState<any[]>([]);
-  const [alivePlayers, setAlivePlayers] = useState<any[]>([]);
-  const [ghosts, setGhosts] = useState<string[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
-  const [scores, setScores] = useState<any>({});
-  const [lives, setLives] = useState<any>({});
-  const [questionNumber, setQuestionNumber] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(0);
-  const [round, setRound] = useState(1);
+  const [round, setRound] = useState(0);
   const [maxRounds, setMaxRounds] = useState(20);
-  const [finalRound, setFinalRound] = useState(false);
-  const [winner, setWinner] = useState<any>(null);
   const [allAnswered, setAllAnswered] = useState(false);
-  const [hostname, setHostname] = useState("Loading...");
-  const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
 
-  // Set hostname on client side only
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setHostname(window.location.host);
-    }
-  }, []);
+    const socketInstance = io();
+    setSocket(socketInstance);
 
-  // --- Socket.IO integration ---
-  useEffect(() => {
-    let socket: Socket | null = null;
-    let reconnectTimeout: NodeJS.Timeout | null = null;
-    let reconnectAttempts = 0;
-    let isMounted = true;
-
-    const connectSocket = () => {
-      if (socket) return;
-      const baseUrl =
-        typeof window !== "undefined" ? window.location.origin : undefined;
-      socket = io(baseUrl || "", { path: "/socket.io" });
-
-      socket.on("connect", () => {
-        console.log("[TV] Socket connected", socket?.id);
-        reconnectAttempts = 0;
-      });
-
-      socket.onAny((event, ...args) => {
-        console.log(`[TV] Socket event: ${event}`, ...args);
-      });
-
-      socket.on("disconnect", () => {
-        console.log("[TV] Socket disconnected", socket?.id);
-        if (isMounted) {
-          reconnectAttempts++;
-          const delay = Math.min(2000 * Math.pow(2, reconnectAttempts), 15000);
-          reconnectTimeout = setTimeout(() => {
-            if (socket) {
-              socket.connect();
-            } else {
-              connectSocket();
-            }
-          }, delay);
-        }
-      });
-
-      socket.on("game:update", (data) => {
-        console.log("[TV] Received game:update", data);
-        setGameState(data.state);
-        setPlayers(data.players);
-        setAlivePlayers(data.alivePlayers || []);
-        setGhosts(data.ghosts || []);
-        setCurrentQuestion(data.question);
-        setQuestionNumber(data.questionNumber);
-        setTotalQuestions(data.totalQuestions);
-        setRound(data.round);
-        setMaxRounds(data.maxRounds);
-        setFinalRound(data.finalRound);
-        setWinner(data.winner);
-        setScores(data.scores);
-        setLives(data.lives);
-        setAllAnswered(data.allAnswered);
-      });
-
-      // Save socket instance for starting game
-      setSocketInstance(socket);
-    };
-
-    connectSocket();
+    socketInstance.on("game:update", (data) => {
+      console.log("[TV] Received game:update", data);
+      setGameState(data.state);
+      setPlayers(data.players);
+      setCurrentQuestion(data.question);
+      setRound(data.round);
+      setMaxRounds(data.totalRounds);
+      setAllAnswered(data.allAnswered);
+    });
 
     return () => {
-      isMounted = false;
-      if (socket) {
-        socket.disconnect();
-        socket = null;
-      }
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      setSocketInstance(null);
+      socketInstance.disconnect();
     };
   }, []);
 
-  // Lobby Screen - TV View (Cinematic Netflix-style)
+  // Lobby Screen
   if (gameState === "lobby" || gameState === "LOBBY") {
     return (
       <div
         style={{
           minHeight: "100vh",
-          background: "#000",
+          background: "linear-gradient(135deg, #0a0a0a 0%, #1a0505 50%, #0a0a0a 100%)",
           color: "#fff",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "2rem",
+          padding: "4rem",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "radial-gradient(circle at 50% 50%, rgba(220, 38, 38, 0.15) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
+
         <h1
           style={{
-            fontSize: "4rem",
+            fontSize: "6rem",
             fontWeight: 900,
-            color: "#e50914",
-            marginBottom: "1rem",
-            letterSpacing: "-2px",
+            textAlign: "center",
+            marginBottom: "3rem",
+            background: "linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #dc2626 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            textShadow: "none",
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           Trivia Murder Party
         </h1>
-        <p
+
+        <div
           style={{
-            fontSize: "1.5rem",
-            color: "#fff",
-            marginBottom: "2rem",
-            fontWeight: 600,
+            background: "rgba(26, 26, 26, 0.8)",
+            border: "4px solid #dc2626",
+            borderRadius: 32,
+            padding: "3rem 4rem",
+            maxWidth: "800px",
+            width: "100%",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8), inset 0 2px 8px rgba(255,255,255,0.1)",
+            position: "relative",
+            zIndex: 1,
           }}
         >
-          Answer correctly or face elimination
-        </p>
-        <section style={{ marginBottom: "2rem", width: "100%", maxWidth: 600 }}>
-          <p style={{ fontWeight: 700, color: "#e50914", fontSize: "1.2rem" }}>
-            Players Connected
-          </p>
-          <div
+          <h2
             style={{
-              fontSize: "2rem",
-              fontWeight: 900,
-              color: "#fff",
-              marginBottom: "1rem",
+              fontSize: "2.5rem",
+              fontWeight: 800,
+              color: "#dc2626",
+              textAlign: "center",
+              marginBottom: "2rem",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
             }}
           >
-            {players.length}
-            <span style={{ color: "#e50914", fontWeight: 700 }}>/8</span>
-          </div>
-          {players.length > 0 ? (
-            <div>
-              {players.map((player, i) => (
+            Players Connected: {players.length}
+          </h2>
+
+          {players.length === 0 ? (
+            <p
+              style={{
+                fontSize: "2rem",
+                color: "#999",
+                textAlign: "center",
+                fontWeight: 600,
+                fontStyle: "italic",
+              }}
+            >
+              Waiting for players to join...
+            </p>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: players.length > 2 ? "1fr 1fr" : "1fr",
+                gap: "1.5rem",
+              }}
+            >
+              {players.map((player, idx) => (
                 <div
                   key={player.id}
                   style={{
+                    background: "linear-gradient(135deg, #1f1f1f 0%, #0f0f0f 100%)",
+                    padding: "1.5rem 2rem",
+                    borderRadius: 16,
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    background: "#111",
-                    border: "2px solid #e50914",
-                    borderRadius: 12,
-                    padding: "0.75rem 1.25rem",
-                    marginBottom: 8,
-                    fontWeight: 700,
+                    gap: "1rem",
+                    border: "2px solid #dc2626",
+                    boxShadow: "0 4px 16px rgba(220, 38, 38, 0.3)",
                   }}
                 >
-                  <span style={{ color: "#e50914", fontWeight: 900 }}>
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span style={{ color: "#fff", fontWeight: 700 }}>
+                  <div
+                    style={{
+                      background: "#dc2626",
+                      color: "#fff",
+                      width: 50,
+                      height: 50,
+                      borderRadius: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.8rem",
+                      fontWeight: 900,
+                      flexShrink: 0,
+                      boxShadow: "0 4px 12px rgba(220, 38, 38, 0.5)",
+                    }}
+                  >
+                    {idx + 1}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "2rem",
+                      fontWeight: 700,
+                      color: "#fff",
+                    }}
+                  >
                     {player.name}
-                  </span>
-                  <span style={{ color: "#e50914", fontWeight: 700 }}>
-                    Ready
                   </span>
                 </div>
               ))}
             </div>
-          ) : (
-            <p style={{ color: "#e50914", fontWeight: 700 }}>
-              Waiting for players to join...
-            </p>
           )}
-        </section>
-        <section style={{ marginBottom: "2rem", textAlign: "center" }}>
-          <p style={{ color: "#fff", fontWeight: 700 }}>Join on your phone</p>
-          <a
-            href="#"
+
+          <p
             style={{
-              color: "#e50914",
-              fontWeight: 900,
-              fontSize: "1.2rem",
-              textDecoration: "underline",
+              marginTop: "3rem",
+              fontSize: "1.8rem",
+              color: "#dc2626",
+              textAlign: "center",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
             }}
           >
-            {hostname}
-          </a>
-        </section>
-        <button
-          disabled={players.length < 1}
-          style={{
-            padding: "1rem 3rem",
-            fontSize: "1.5rem",
-            fontWeight: 900,
-            borderRadius: 16,
-            background: players.length >= 1 ? "#e50914" : "#222",
-            color: "#fff",
-            border: "2px solid #e50914",
-            boxShadow: "0 0 16px #e50914",
-            cursor: players.length >= 1 ? "pointer" : "not-allowed",
-            marginBottom: "2rem",
-            transition: "background 0.2s, color 0.2s",
-          }}
-        >
-          {players.length >= 1 ? "Start Game" : "Waiting for Players"}
-        </button>
-        <footer
-          style={{
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: "1rem",
-            opacity: 0.7,
-          }}
-        >
-          <span>v0.1.0</span>
-          <span style={{ marginLeft: 16 }}>Sound: On</span>
-        </footer>
+            ⏱️ Start the game from your phone
+          </p>
+        </div>
       </div>
     );
   }
 
-  // Question Screen - TV View
-  if ((gameState === "ASKING" || gameState === "question" || gameState === "REVEAL" || gameState === "reveal") && currentQuestion) {
+  // Question Screen
+  if (
+    (gameState === "ASKING" ||
+      gameState === "question" ||
+      gameState === "REVEAL" ||
+      gameState === "reveal") &&
+    currentQuestion
+  ) {
     const isReveal = gameState === "reveal" || gameState === "REVEAL";
     return (
       <div
         style={{
           minHeight: "100vh",
-          background: "#000",
+          background:
+            "linear-gradient(135deg, #0a0a0a 0%, #1a0505 50%, #0a0a0a 100%)",
           color: "#fff",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
+          justifyContent: "flex-start",
+          padding: "3rem 3rem",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Animated background effect */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background:
+              "radial-gradient(circle at 50% 50%, rgba(220, 38, 38, 0.1) 0%, transparent 70%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
+        {/* Header with round and category */}
         <header
           style={{
             width: "100%",
-            maxWidth: 700,
-            marginBottom: "2rem",
+            maxWidth: "1600px",
+            marginBottom: "2.5rem",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            zIndex: 1,
           }}
         >
           <div
-            style={{ fontWeight: 900, color: "#e50914", fontSize: "1.5rem" }}
+            style={{
+              fontWeight: 900,
+              color: "#dc2626",
+              fontSize: "2.5rem",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              textShadow: "0 0 20px rgba(220, 38, 38, 0.5)",
+            }}
           >
-            Round {round}/{maxRounds}
+            Round {round} / {maxRounds}
           </div>
           <div
             style={{
-              fontWeight: 700,
+              fontWeight: 800,
               color: "#fff",
-              fontSize: "1.2rem",
-              background: "#e50914",
-              borderRadius: 8,
-              padding: "0.5rem 1rem",
+              fontSize: "2rem",
+              background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)",
+              borderRadius: 16,
+              padding: "1rem 2.5rem",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              boxShadow:
+                "0 8px 32px rgba(220, 38, 38, 0.4), inset 0 -2px 8px rgba(0,0,0,0.3)",
             }}
           >
             {currentQuestion.category}
           </div>
         </header>
-        <section style={{ marginBottom: "2rem", width: "100%", maxWidth: 700 }}>
+
+        {/* Question */}
+        <section
+          style={{
+            marginBottom: "3rem",
+            width: "100%",
+            maxWidth: "1600px",
+            zIndex: 1,
+          }}
+        >
           <h2
             style={{
-              fontSize: "2.2rem",
+              fontSize: "3.5rem",
               fontWeight: 900,
               color: "#fff",
               textAlign: "center",
-              marginBottom: "1rem",
+              marginBottom: "2rem",
               letterSpacing: "-1px",
+              lineHeight: "1.2",
+              textShadow: "0 4px 12px rgba(0, 0, 0, 0.8)",
+              padding: "0 2rem",
             }}
           >
-            {currentQuestion.question}
+            {currentQuestion.text || currentQuestion.question}
           </h2>
         </section>
+
+        {/* Answer options in 2x2 grid */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: "1rem",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "2rem",
             width: "100%",
-            maxWidth: 700,
+            maxWidth: "1600px",
+            marginBottom: "2.5rem",
+            zIndex: 1,
           }}
         >
           {currentQuestion.options.map((option: string, i: number) => {
             let styleObj: any = {
-              background: "#111",
+              background: "linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)",
               color: "#fff",
-              border: "2px solid #e50914",
-              borderRadius: 12,
-              padding: "1rem 1.5rem",
+              border: "4px solid #dc2626",
+              borderRadius: 24,
+              padding: "2.5rem 3rem",
               fontWeight: 900,
-              fontSize: "1.2rem",
+              fontSize: "2.2rem",
               display: "flex",
               alignItems: "center",
-              transition: "background 0.2s, color 0.2s",
+              transition: "all 0.3s ease",
+              boxShadow:
+                "0 8px 32px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255,255,255,0.1)",
+              position: "relative",
+              overflow: "hidden",
             };
             if (isReveal) {
-              if (i === currentQuestion.correct) {
-                styleObj.background = "#e50914";
+              if (i === (currentQuestion.correct ?? currentQuestion.answer_index)) {
+                styleObj.background =
+                  "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)";
                 styleObj.color = "#fff";
-                styleObj.border = "2px solid #fff";
+                styleObj.border = "4px solid #fff";
+                styleObj.boxShadow =
+                  "0 0 60px rgba(220, 38, 38, 0.8), inset 0 -4px 12px rgba(0,0,0,0.4)";
+                styleObj.transform = "scale(1.03)";
               } else {
-                styleObj.background = "#222";
-                styleObj.color = "#888";
-                styleObj.border = "2px solid #222";
+                styleObj.background = "#1a1a1a";
+                styleObj.color = "#666";
+                styleObj.border = "4px solid #333";
+                styleObj.opacity = "0.5";
               }
             }
+            const correctIdx = currentQuestion.correct ?? currentQuestion.answer_index;
             return (
               <div key={i} style={styleObj}>
                 <span
                   style={{
-                    color: "#e50914",
+                    background:
+                      isReveal && i === correctIdx ? "#fff" : "#dc2626",
+                    color: isReveal && i === correctIdx ? "#dc2626" : "#fff",
                     fontWeight: 900,
-                    fontSize: "1.5rem",
-                    marginRight: 16,
+                    fontSize: "2.5rem",
+                    marginRight: 24,
+                    width: 70,
+                    height: 70,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 16,
+                    flexShrink: 0,
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
                   }}
                 >
                   {String.fromCharCode(65 + i)}
                 </span>
-                <span>{option}</span>
+                <span style={{ flex: 1 }}>{option}</span>
               </div>
             );
           })}
         </div>
+
+        {/* Status message */}
         {!isReveal && (
           <div
             style={{
-              marginTop: "2rem",
-              color: "#e50914",
-              fontWeight: 700,
-              fontSize: "1.2rem",
+              color: "#dc2626",
+              fontWeight: 800,
+              fontSize: "2.2rem",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              textShadow: "0 0 20px rgba(220, 38, 38, 0.6)",
+              zIndex: 1,
             }}
           >
-            {allAnswered ? "Revealing answer..." : "Players answering..."}
+            {allAnswered ? "🔥 Revealing answer..." : "⏱️ Players answering..."}
           </div>
         )}
-        {isReveal && (
+
+        {/* Explanation during reveal */}
+        {isReveal && currentQuestion.explanation && (
           <section
             style={{
-              marginTop: "2rem",
-              background: "#111",
-              borderRadius: 12,
-              padding: "1rem 1.5rem",
+              background: "rgba(26, 26, 26, 0.9)",
+              borderRadius: 24,
+              padding: "2rem 3rem",
               width: "100%",
-              maxWidth: 700,
-              border: "2px solid #e50914",
+              maxWidth: "1600px",
+              border: "4px solid #dc2626",
+              boxShadow: "0 12px 48px rgba(220, 38, 38, 0.3)",
+              zIndex: 1,
             }}
           >
             <div
               style={{
-                color: "#e50914",
+                color: "#dc2626",
                 fontWeight: 900,
-                fontSize: "1.2rem",
-                marginBottom: 8,
+                fontSize: "2rem",
+                marginBottom: 12,
+                textTransform: "uppercase",
+                letterSpacing: "1px",
               }}
             >
-              Correct: {String.fromCharCode(65 + currentQuestion.correct)}
+              ✓ Correct:{" "}
+              {String.fromCharCode(
+                65 + (currentQuestion.correct ?? currentQuestion.answer_index)
+              )}
             </div>
-            <p style={{ color: "#fff", fontWeight: 700 }}>
+            <p
+              style={{
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: "1.8rem",
+                lineHeight: "1.6",
+              }}
+            >
               {currentQuestion.explanation}
             </p>
           </section>
@@ -384,203 +435,7 @@ export default function TVDisplay() {
     );
   }
 
-  // Final Round Screen
-  if (gameState === "final") {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#000",
-          color: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 700,
-            background: "#111",
-            borderRadius: 16,
-            padding: "2rem",
-            border: "2px solid #e50914",
-            textAlign: "center",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: "2.5rem",
-              fontWeight: 900,
-              color: "#e50914",
-              marginBottom: "1rem",
-              letterSpacing: "-1px",
-            }}
-          >
-            Final Round
-          </h1>
-          <p style={{ color: "#fff", fontWeight: 700, marginBottom: "2rem" }}>
-            Only the survivors remain
-          </p>
-          {winner ? (
-            <div>
-              <p
-                style={{
-                  color: "#e50914",
-                  fontWeight: 900,
-                  fontSize: "1.2rem",
-                  marginBottom: 8,
-                }}
-              >
-                The last one standing
-              </p>
-              <div
-                style={{
-                  background: "#e50914",
-                  color: "#fff",
-                  borderRadius: 12,
-                  padding: "1rem 1.5rem",
-                  fontWeight: 900,
-                  fontSize: "1.5rem",
-                  border: "2px solid #fff",
-                  marginBottom: 8,
-                }}
-              >
-                {winner.name}
-              </div>
-              <div
-                style={{ color: "#fff", fontWeight: 700, fontSize: "1.2rem" }}
-              >
-                {scores[winner.id] || 0} points
-              </div>
-            </div>
-          ) : (
-            <div>
-              {alivePlayers.map((player) => (
-                <div
-                  key={player.id}
-                  style={{
-                    background: "#111",
-                    color: "#fff",
-                    borderRadius: 12,
-                    padding: "1rem 1.5rem",
-                    fontWeight: 900,
-                    fontSize: "1.2rem",
-                    border: "2px solid #e50914",
-                    marginBottom: 8,
-                  }}
-                >
-                  {player.name} - {scores[player.id] || 0} points
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Results Screen
-  if (gameState === "results") {
-    const sortedPlayers = players
-      .map((player) => ({
-        ...player,
-        score: scores[player.id] || 0,
-        isDead: ghosts.includes(player.id),
-      }))
-      .sort((a, b) => b.score - a.score);
-    const topWinner = sortedPlayers[0];
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#000",
-          color: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 700,
-            background: "#111",
-            borderRadius: 16,
-            padding: "2rem",
-            border: "2px solid #e50914",
-            textAlign: "center",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: "2.5rem",
-              fontWeight: 900,
-              color: "#e50914",
-              marginBottom: "1rem",
-              letterSpacing: "-1px",
-            }}
-          >
-            Sole Survivor
-          </h1>
-          <section style={{ marginBottom: "2rem" }}>
-            <div
-              style={{
-                fontWeight: 900,
-                color: "#fff",
-                fontSize: "2rem",
-                marginBottom: 8,
-              }}
-            >
-              {topWinner?.name}
-            </div>
-            <div
-              style={{ color: "#e50914", fontWeight: 700, fontSize: "1.2rem" }}
-            >
-              Escaped with {topWinner?.score} points
-            </div>
-          </section>
-          <p style={{ color: "#fff", fontWeight: 700, marginBottom: 8 }}>
-            Final Standings
-          </p>
-          <div>
-            {sortedPlayers.map((player, i) => (
-              <div
-                key={player.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  background:
-                    i === 0 ? "#e50914" : player.isDead ? "#222" : "#111",
-                  color: i === 0 ? "#fff" : player.isDead ? "#888" : "#fff",
-                  border: "2px solid #e50914",
-                  borderRadius: 12,
-                  padding: "0.75rem 1.25rem",
-                  marginBottom: 8,
-                  fontWeight: 900,
-                }}
-              >
-                <span>
-                  {i === 0 ? "#1" : player.isDead ? "ELIMINATED" : `${i + 1}.`}
-                </span>
-                <span>{player.name}</span>
-                <span>{player.score} pts</span>
-              </div>
-            ))}
-          </div>
-          <p style={{ color: "#e50914", fontWeight: 700, marginTop: 16 }}>
-            New game starting soon...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+  // Default fallback
   return (
     <div
       style={{
@@ -588,22 +443,11 @@ export default function TVDisplay() {
         background: "#000",
         color: "#fff",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "2rem",
       }}
     >
-      <div
-        style={{
-          fontWeight: 900,
-          fontSize: "2rem",
-          color: "#e50914",
-          marginBottom: "1rem",
-        }}
-      >
-        Loading...
-      </div>
+      <p style={{ fontSize: "2rem" }}>Loading...</p>
     </div>
   );
 }
