@@ -19,6 +19,7 @@ export default function TVDisplay() {
   const [winner, setWinner] = useState<any>(null);
   const [allAnswered, setAllAnswered] = useState(false);
   const [hostname, setHostname] = useState("Loading...");
+  const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
 
   // Set hostname on client side only
   useEffect(() => {
@@ -81,6 +82,9 @@ export default function TVDisplay() {
         setLives(data.lives);
         setAllAnswered(data.allAnswered);
       });
+
+      // Save socket instance for starting game
+      setSocketInstance(socket);
     };
 
     connectSocket();
@@ -92,6 +96,7 @@ export default function TVDisplay() {
         socket = null;
       }
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      setSocketInstance(null);
     };
   }, []);
 

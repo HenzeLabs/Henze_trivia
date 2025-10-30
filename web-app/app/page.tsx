@@ -411,7 +411,7 @@ export default function Home() {
                 />
                 <button
                   onClick={joinGame}
-                  disabled={!isValidPlayerName(playerName) || isSubmitting || playerId}
+                  disabled={!isValidPlayerName(playerName) || isSubmitting || !!playerId}
                   className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:bg-gray-700"
                 >
                   {isSubmitting ? "ENTERING..." : playerId ? "JOINED! Loading..." : "JOIN GAME"}
