@@ -234,8 +234,8 @@ export default function TVDisplay() {
   }
 
   // Question Screen - TV View
-  if ((gameState === "question" || gameState === "reveal") && currentQuestion) {
-    const isReveal = gameState === "reveal";
+  if ((gameState === "ASKING" || gameState === "question" || gameState === "REVEAL" || gameState === "reveal") && currentQuestion) {
+    const isReveal = gameState === "reveal" || gameState === "REVEAL";
     return (
       <div
         style={{

@@ -468,14 +468,15 @@ export default function Home() {
   }
 
   if (
-    ((gameState === "question" || gameState === "reveal") && currentQuestion) ||
+    ((gameState === "ASKING" || gameState === "question" || gameState === "REVEAL" || gameState === "reveal") && currentQuestion) ||
     (playerId &&
       gameState !== "lobby" &&
+      gameState !== "LOBBY" &&
       gameState !== "results" &&
       gameState !== "final" &&
       currentQuestion)
   ) {
-    const isReveal = gameState === "reveal";
+    const isReveal = gameState === "reveal" || gameState === "REVEAL";
     const waitingHeadline =
       aliveResponsesRemaining > 0
         ? `Waiting for ${aliveResponsesRemaining} ${
