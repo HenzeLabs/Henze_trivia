@@ -166,7 +166,7 @@ export default function Home() {
         setPlayers(data.players);
         setAlivePlayers(data.alivePlayers || []);
         setGhosts(data.ghosts || []);
-        setCurrentQuestion(data.currentQuestion);
+        setCurrentQuestion(data.question);
         setQuestionNumber(data.questionNumber);
         setTotalQuestions(data.totalQuestions);
         setRound(data.round);
