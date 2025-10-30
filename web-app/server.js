@@ -219,14 +219,14 @@ app
           const player = gameRoom.addPlayer(socket.id, payload.playerName);
 
           logger.player(`Player joined: ${payload.playerName}`, {
-            playerId: player.id,
+            playerId: player.playerId,
             totalPlayers: gameRoom.players.size,
             players: Array.from(gameRoom.players.values()).map((p) => p.name),
           });
 
           cb({
             success: true,
-            playerId: player.id,
+            playerId: player.playerId,
             token: gameRoom.token,
             game: gameRoom.getGameState(),
           });
