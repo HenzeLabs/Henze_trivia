@@ -86,7 +86,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = (props) => {
     setSubmitted(true);
     socket.emit(
       "player:answer",
-      { token: gameState?.token, answer: i },
+      { playerId: props.playerId, token: gameState?.token, answer: i },
       (res: any) => {
         if (!res.success) {
           setWaitingMsg(
