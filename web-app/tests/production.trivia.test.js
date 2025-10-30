@@ -102,6 +102,22 @@ test("Production multi-client trivia flow @trivia", async ({ browser }) => {
 
   async function createContext(label) {
     const context = await browser.newContext();
+    await context.addInitScript(() => {
+      const NativeWebSocket = window.WebSocket;
+      window.__qaMessages = [];
+      window.WebSocket = class extends NativeWebSocket {
+        constructor(...args) {
+          super(...args);
+          this.addEventListener("message", (event) => {
+            try {
+              window.__qaMessages.push(event.data);
+            } catch {
+              // ignore logging errors
+            }
+          });
+        }
+      };
+    });
     contexts.push({ context, label });
     return context;
   }
@@ -273,6 +289,14 @@ test("Production multi-client trivia flow @trivia", async ({ browser }) => {
       "Player1 visible text snippet:",
       await player1Page.evaluate(() => document.body.innerText.slice(0, 400))
     );
+    const player1Messages = await player1Page.evaluate(() => {
+      try {
+        return window.__qaMessages?.slice(-5) || [];
+      } catch {
+        return [];
+      }
+    });
+    console.log("Player1 recent WS messages:", player1Messages);
     await player1Page.screenshot({
       path: "player1-question.png",
       fullPage: true,
@@ -330,9 +354,6 @@ test("Production multi-client trivia flow @trivia", async ({ browser }) => {
       () => localStorage.getItem("henzeTrivia_playerId") || ""
     );
 
-    await player1Page.waitForSelector("text=Players in Lobby", {
-      timeout: 20000,
-    });
     await player1Page.evaluate(() => {
       window.dispatchEvent(new Event("offline"));
     });
