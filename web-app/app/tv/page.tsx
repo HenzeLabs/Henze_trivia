@@ -96,7 +96,7 @@ export default function TVDisplay() {
   }, []);
 
   // Lobby Screen - TV View (Cinematic Netflix-style)
-  if (gameState === "lobby") {
+  if (gameState === "lobby" || gameState === "LOBBY") {
     return (
       <div
         style={{

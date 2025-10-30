@@ -109,7 +109,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (gameState === "lobby" && !playerId && inputRef.current) {
+    if ((gameState === "lobby" || gameState === "LOBBY") && !playerId && inputRef.current) {
       inputRef.current.focus();
     }
   }, [gameState, playerId]);
@@ -377,14 +377,14 @@ export default function Home() {
     ) : null;
 
   if (
-    gameState === "lobby" &&
+    (gameState === "lobby" || gameState === "LOBBY") &&
     !players.find((p) => p.id === playerId) &&
     !showJoin
   ) {
     return <WelcomeScreen onJoin={() => setShowJoin(true)} />;
   }
 
-  if (gameState === "lobby") {
+  if (gameState === "lobby" || gameState === "LOBBY") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-950 flex items-center justify-center p-6">
         <div className="bg-gray-900/90 border-4 border-red-600 rounded-3xl p-12 w-full max-w-2xl shadow-2xl shadow-red-900/50">
