@@ -1,29 +1,24 @@
 @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400;700&family=Inter:wght@400;600;700&family=Space+Grotesk:wght@400;600&display=swap");
 
 :root {
-  --bg-primary: #05060a;
-  --bg-secondary: #0f111b;
-  --bg-elevated: rgba(12, 15, 24, 0.78);
-  --bg-card: rgba(15, 18, 29, 0.92);
-  --stroke: rgba(255, 255, 255, 0.08);
-  --stroke-strong: rgba(255, 255, 255, 0.16);
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5f5;
-  --text-muted: #8c95c8;
-  --accent-primary: #f43f5e;
-  --accent-secondary: #22d3ee;
-  --accent-amber: #fbbf24;
-  --success: #34d399;
-  --danger: #fb7185;
-  --radius-sm: 12px;
-  --radius-md: 20px;
-  --radius-lg: 28px;
-  --blur: 24px;
-  --shadow-strong: 0 22px 60px rgba(8, 10, 22, 0.65);
-  --shadow-soft: 0 12px 32px rgba(8, 10, 22, 0.45);
+  --bg-primary: #11151f;
+  --bg-secondary: #181c27;
+  --bg-card: #1f2432;
+  --stroke: rgba(255, 255, 255, 0.06);
+  --stroke-strong: rgba(255, 255, 255, 0.12);
+  --text-primary: #f7f9fc;
+  --text-secondary: #d1d6e4;
+  --text-muted: #8a93ac;
+  --accent-primary: #f5566d;
+  --accent-secondary: #3fb9ff;
+  --success: #3fd6a5;
+  --danger: #f87171;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --shadow-soft: 0 12px 28px rgba(9, 12, 20, 0.35);
   --transition-fast: 160ms ease;
-  --transition-slow: 340ms cubic-bezier(0.22, 1, 0.36, 1);
-  --max-content-width: 1100px;
+  --transition-slow: 260ms ease;
 }
 
 * {
@@ -31,7 +26,7 @@
 }
 
 body {
-  background: radial-gradient(120% 120% at 50% 0%, rgba(34, 211, 238, 0.12) 0%, transparent 50%), radial-gradient(140% 140% at 90% 10%, rgba(244, 63, 94, 0.25) 0%, transparent 60%), linear-gradient(180deg, #03040a 0%, #070712 100%);
+  background: radial-gradient(160% 160% at 50% -20%, rgba(63, 185, 255, 0.08) 0%, transparent 55%), linear-gradient(180deg, #0c101a 0%, #080b12 100%);
   color: var(--text-primary);
   font-family: "Inter", "Space Grotesk", system-ui, sans-serif;
   min-height: 100vh;
@@ -46,7 +41,7 @@ a {
 .heading {
   font-family: "Bebas Neue", system-ui, sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -64,22 +59,14 @@ a {
   border: 1px solid var(--stroke);
   border-radius: var(--radius-lg);
   padding: clamp(1.5rem, 2vw, 2.75rem);
-  box-shadow: var(--shadow-strong);
-  backdrop-filter: blur(var(--blur));
-  transition: transform var(--transition-slow), box-shadow var(--transition-slow), border-color var(--transition-fast);
-}
-
-.surface:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 26px 70px rgba(8, 10, 22, 0.55);
-  border-color: var(--stroke-strong);
+  box-shadow: var(--shadow-soft);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .glass {
-  background: rgba(11, 14, 23, 0.68);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 25, 35, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-md);
-  backdrop-filter: blur(calc(var(--blur) / 2));
 }
 
 .pill {
@@ -88,8 +75,8 @@ a {
   gap: 0.5rem;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  background: rgba(244, 63, 94, 0.12);
-  color: #fda4af;
+  background: rgba(245, 86, 109, 0.12);
+  color: #fbc0c8;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -355,8 +342,8 @@ input:focus {
   gap: 0.45rem;
   padding: 0.4rem 0.85rem;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.1);
-  color: #99f6e4;
+  background: rgba(63, 185, 255, 0.12);
+  color: #b9e4ff;
   font-weight: 600;
   letter-spacing: 0.05em;
 }
