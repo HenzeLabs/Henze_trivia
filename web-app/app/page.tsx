@@ -249,6 +249,8 @@ export default function Home() {
       );
       return;
     }
+    console.log("[JOIN] Attempting to join with name:", playerName);
+    console.log("[JOIN] Socket connected:", socketRef.current?.connected);
     setIsSubmitting(true);
     setError("");
     if (socketRef.current) {
@@ -256,17 +258,24 @@ export default function Home() {
         "player:join",
         { playerName: playerName.trim() },
         (data: any) => {
+          console.log("[JOIN] Response received:", data);
           setIsSubmitting(false);
           if (data.success) {
+            console.log("[JOIN] Success! PlayerId:", data.playerId);
             setPlayerId(data.playerId);
             setGameToken(data.token);
             localStorage.setItem("henzeTrivia_playerId", data.playerId);
             localStorage.setItem("henzeTrivia_token", data.token);
           } else {
+            console.error("[JOIN] Failed:", data.error);
             setError(data.error || "Failed to join game");
           }
         }
       );
+    } else {
+      console.error("[JOIN] Socket not connected!");
+      setIsSubmitting(false);
+      setError("Connection lost. Please refresh the page.");
     }
   };
 
