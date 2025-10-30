@@ -97,10 +97,22 @@ app
         return handle(req, res, parse(req.url, true));
       }
 
-      const helmetOptions =
-        process.env.NODE_ENV !== "production"
-          ? { contentSecurityPolicy: false }
-          : undefined;
+      // Helmet with relaxed CSP for Next.js
+      const helmetOptions = {
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            connectSrc: ["'self'", "wss:", "ws:"],
+            fontSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+          },
+        },
+      };
       helmet(helmetOptions)(req, res, async () => {
         if (req.url === "/healthz" || req.url === "/status") {
           res.writeHead(200, { "Content-Type": "application/json" });
