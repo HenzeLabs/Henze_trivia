@@ -43,38 +43,79 @@ export default function WelcomeScreen({ onJoin }: { onJoin: () => void }) {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-black via-gray-900 to-red-950 p-8">
-      <div className="max-w-4xl w-full">
-        <h1 className="heading text-7xl md:text-8xl text-red-600 text-center mb-12 select-none animate-pulse">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[10%] w-[480px] h-[480px] bg-[rgba(244,63,94,0.12)] blur-[180px]" />
+        <div className="absolute bottom-[-25%] right-[15%] w-[520px] h-[520px] bg-[rgba(34,211,238,0.1)] blur-[200px]" />
+      </div>
+
+      <div className="surface max-w-4xl w-full text-center fade-in relative z-10">
+        <div className="flex justify-center mb-6">
+          <span className="pill pulse-ring">
+            Tonight&apos;s Feature · Multiplayer Roast Ritual
+          </span>
+        </div>
+        <h1 className="heading text-6xl md:text-7xl lg:text-8xl tracking-[0.25em] mb-8 glow-text">
           HENZE TRIVIA
         </h1>
-
         <div
-          className={`subtitle text-2xl md:text-3xl text-center mb-16 max-w-3xl mx-auto transition-opacity duration-300 min-h-[4rem] flex items-center justify-center ${
-            fade ? "opacity-100" : "opacity-30"
+          className={`subtitle text-xl md:text-2xl max-w-3xl mx-auto transition-opacity duration-300 min-h-[3.5rem] flex items-center justify-center ${
+            fade ? "opacity-100" : "opacity-20"
           }`}
         >
-          <p className="text-gray-300 font-semibold italic">"{tagline}"</p>
+          <p className="text-gray-200/90 font-semibold italic">
+            “{tagline}”
+          </p>
         </div>
-
-        <div className="flex flex-col items-center gap-8">
-          <button
-            onClick={onJoin}
-            className="btn-primary text-2xl px-16 py-6 shadow-[0_0_50px_rgba(220,38,38,0.5)] hover:shadow-[0_0_80px_rgba(220,38,38,0.8)]"
-          >
-            JOIN THE GAME
+        <div className="divider" />
+        <div className="stat-grid mt-8">
+          <div className="stat-card">
+            <span className="subtitle uppercase tracking-[0.28em] text-xs text-[rgba(148,163,184,0.75)]">
+              Survivors Tonight
+            </span>
+            <span className="heading text-4xl text-left">8 max</span>
+            <p className="text-sm text-[rgba(203,213,225,0.7)] text-left">
+              Seats fill fast. First come, first sacrificed.
+            </p>
+          </div>
+          <div className="stat-card">
+            <span className="subtitle uppercase tracking-[0.28em] text-xs text-[rgba(148,163,184,0.75)]">
+              Rounds Loaded
+            </span>
+            <span className="heading text-4xl text-left">20</span>
+            <p className="text-sm text-[rgba(203,213,225,0.7)] text-left">
+              Trivia, callouts, and the occasional sabotage.
+            </p>
+          </div>
+          <div className="stat-card">
+            <span className="subtitle uppercase tracking-[0.28em] text-xs text-[rgba(148,163,184,0.75)]">
+              House Rules
+            </span>
+            <span className="heading text-4xl text-left">3 lives</span>
+            <p className="text-sm text-[rgba(203,213,225,0.7)] text-left">
+              Miss a question, lose a life. Zero mercy. Minimal refunds.
+            </p>
+          </div>
+        </div>
+        <div className="mt-10 flex flex-col items-center gap-6">
+          <button onClick={onJoin} className="btn-primary px-8 py-4">
+            Enter The Lobby
           </button>
-
-          <p className="text-gray-500 text-sm uppercase tracking-widest">
-            No mercy. No refunds. Maximum carnage.
+          <p className="text-xs uppercase tracking-[0.24em] text-[rgba(148,163,184,0.65)]">
+            No walk-ins · No gentle mode · No ties
           </p>
         </div>
       </div>
 
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-8 text-red-900/20 text-xs uppercase tracking-widest font-bold">
-        <span>DEATH</span>
-        <span>|</span>
-        <span>GLORY</span>
+      <div className="marquee mt-16 w-full relative z-0">
+        <div className="marquee-inner">
+          <span>Prepare your alibi</span>
+          <span>Bring spare dignity</span>
+          <span>Street cred not accepted</span>
+          <span>Therapists on standby</span>
+          <span>Prepare your alibi</span>
+          <span>Bring spare dignity</span>
+        </div>
       </div>
     </div>
   );

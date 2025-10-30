@@ -5,10 +5,8 @@ interface OfflineBannerProps {
 }
 
 const OfflineBanner: React.FC<OfflineBannerProps> = ({ message }) => (
-  <div className="box w-full mb-6 bg-black border border-red-700 text-center py-3">
-    <span className="heading text-red-600 text-lg font-bold">
-      {message || "You are offline. Some features may be unavailable."}
-    </span>
+  <div className="offline-banner">
+    {message || "Connection lost. Reconnecting you to the murder party..."}
   </div>
 );
 

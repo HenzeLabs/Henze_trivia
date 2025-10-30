@@ -1,14 +1,9 @@
 import React from "react";
-import {
-  getSavage,
-  savageCorrect,
-  savageWrong,
-  savageWaiting,
-} from "./savageFeedback";
+import { getSavage, savageCorrect, savageWrong } from "./savageFeedback";
 
 interface FinalScreenProps {
   winner: any;
-  scores: any;
+  scores: Record<string, number>;
   alivePlayers: any[];
   gameToken: string;
   socketRef: React.MutableRefObject<any>;
@@ -24,62 +19,96 @@ const FinalScreen: React.FC<FinalScreenProps> = ({
   socketRef,
   setError,
   offlineBanner,
-}) => (
-  <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center p-8 v-gap">
-    <div className="box w-full max-w-2xl flex flex-col items-center v-gap">
+}) => {
+  const handleDetermineWinner = () => {
+    if (!socketRef.current) return;
+    socketRef.current.emit(
+      "player:final",
+      { token: gameToken },
+      (data: any) => {
+        if (!data.success) {
+          setError(data.error || "Failed to determine winner");
+        }
+      }
+    );
+  };
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center px-6 py-14 relative overflow-hidden">
       {offlineBanner}
-      <h1 className="heading text-4xl text-center text-red-600 mb-8">
-        FINAL ESCAPE
-      </h1>
-      <div className="text-center mb-8">
-        {winner ? (
-          <div>
-            <p className="subtitle text-white text-xl mb-4 font-bold">
-              The winner has been determined! {getSavage(savageCorrect)}
-            </p>
-            <div className="box bg-red-700 text-white font-black text-xl border-none p-4 rounded-lg">
-              {winner.name} - {scores[winner.id] || 0} points (try not to gloat,
-              disaster)
-            </div>
-          </div>
-        ) : (
-          <div>
-            <p className="subtitle text-white text-xl mb-4 font-bold">
-              Only the survivors remain... {getSavage(savageWrong)}
-            </p>
-            <div className="flex flex-col w-full v-gap">
-              {alivePlayers.map((player) => (
-                <div
-                  key={player.id}
-                  className="box bg-[#0d0d0d] text-white font-black border-none p-3 rounded-lg"
-                >
-                  {player.name} - {scores[player.id] || 0} points (barely
-                  hanging on)
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-28%] left-[15%] w-[420px] h-[420px] bg-[rgba(34,211,238,0.12)] blur-[210px]" />
+        <div className="absolute bottom-[-30%] right-[10%] w-[460px] h-[460px] bg-[rgba(244,63,94,0.12)] blur-[200px]" />
       </div>
-      <button
-        onClick={() => {
-          if (socketRef.current) {
-            socketRef.current.emit(
-              "player:final",
-              { token: gameToken },
-              (data: any) => {
-                if (!data.success)
-                  setError(data.error || "Failed to determine winner");
-              }
-            );
-          }
-        }}
-        className="btn-primary w-full text-xl font-black"
-      >
-        DETERMINE WINNER (let's see who gets roasted)
-      </button>
+
+      <div className="surface max-w-4xl w-full space-y-8 relative z-10">
+        <header className="text-center space-y-4">
+          <span className="pill">Finale · Sudden Death Ritual</span>
+          <h1 className="heading text-5xl tracking-[0.22em] glow-text">
+            Final Escape
+          </h1>
+          <p className="text-xs uppercase tracking-[0.24em] text-[rgba(148,163,184,0.7)]">
+            If a winner isn&apos;t crowned, chaos continues until morale
+            improves.
+          </p>
+        </header>
+
+        <section className="glass rounded-[24px] border border-[rgba(148,163,184,0.16)] p-8 space-y-6">
+          {winner ? (
+            <div className="space-y-4 text-center">
+              <p className="subtitle uppercase tracking-[0.28em] text-xs text-[rgba(148,163,184,0.75)]">
+                Survivor Identified
+              </p>
+              <h2 className="heading text-4xl tracking-[0.18em] text-[rgba(244,63,94,0.85)]">
+                {winner.name}
+              </h2>
+              <p className="text-base text-[rgba(226,232,240,0.85)]">
+                {scores[winner.id] || 0} pts · {getSavage(savageCorrect)}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 text-center">
+              <p className="subtitle uppercase tracking-[0.28em] text-xs text-[rgba(148,163,184,0.75)]">
+                Survivors Still Standing
+              </p>
+              <p className="text-sm text-[rgba(203,213,225,0.75)] max-w-2xl mx-auto">
+                No one has escaped yet. The arena demands one final decision.
+                {getSavage(savageWrong)}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {alivePlayers.map((player) => (
+                  <div
+                    key={player.id}
+                    className="glass rounded-[18px] border border-[rgba(148,163,184,0.16)] px-4 py-4 text-left space-y-1"
+                  >
+                    <h3 className="heading text-2xl tracking-[0.16em]">
+                      {player.name}
+                    </h3>
+                    <p className="text-sm text-[rgba(203,213,225,0.7)]">
+                      {scores[player.id] || 0} pts · hanging on out of spite
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <footer className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <p className="text-sm text-[rgba(203,213,225,0.75)] max-w-lg">
+            Smash the button to let the algorithm declare a winner. If it takes
+            too long, it starts sacrificing alphabetically.
+          </p>
+          <button
+            onClick={handleDetermineWinner}
+            className="btn-primary min-w-[240px] justify-center"
+          >
+            Determine The Survivor
+          </button>
+        </footer>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default FinalScreen;

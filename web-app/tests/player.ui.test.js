@@ -5,8 +5,9 @@ test.describe("Player UI", () => {
   test("should load the player page", async ({ page }) => {
     await page.goto("http://localhost:3000");
     await expect(page).toHaveTitle(/Henze Trivia/i);
+    await page.getByRole("button", { name: /enter the lobby/i }).click();
     await expect(
-      page.locator('input[placeholder="Enter your name"]')
+      page.locator('input[placeholder="Minimum chaos, maximum flair"]')
     ).toBeVisible();
   });
 });

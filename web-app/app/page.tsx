@@ -4,16 +4,24 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { io, Socket } from "socket.io-client";
 import dynamic from "next/dynamic";
 import WelcomeScreen from "./components/WelcomeScreen";
+import LobbyScreen from "./components/LobbyScreen";
+import OfflineBanner from "./components/OfflineBanner";
+import ErrorScreen from "./components/ErrorScreen";
+import FinalScreen from "./components/FinalScreen";
 
 const QuestionScreen = dynamic(() => import("./components/QuestionScreen"), {
   loading: () => (
-    <div className="text-center text-xl text-red-300">Loading question…</div>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="spinner" />
+    </div>
   ),
   ssr: false,
 });
 const ResultsScreen = dynamic(() => import("./components/ResultsScreen"), {
   loading: () => (
-    <div className="text-center text-xl text-yellow-300">Loading results…</div>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="spinner" />
+    </div>
   ),
   ssr: false,
 });
@@ -360,29 +368,12 @@ export default function Home() {
   );
 
   if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 to-black flex items-center justify-center p-4">
-        <div className="bg-gray-900 border-4 border-red-500 rounded-3xl p-12 w-full max-w-md shadow-2xl text-center">
-          <h1 className="text-4xl font-black text-red-400 mb-6 uppercase tracking-wide">
-            CONNECTION SEVERED
-          </h1>
-          <p className="text-red-300 mb-8 text-lg">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="btn-primary w-full"
-          >
-            RECONNECT
-          </button>
-        </div>
-      </div>
-    );
+    return <ErrorScreen error={error} />;
   }
 
   const offlineBanner =
     hasMounted && !isOnline ? (
-      <div className="mb-4 rounded-2xl border-2 border-yellow-500 bg-yellow-900/90 px-6 py-4 text-yellow-100 text-base font-bold shadow-lg uppercase tracking-wide">
-        Connection lost. Reconnecting...
-      </div>
+      <OfflineBanner message="Connection lost. Reconnecting..." />
     ) : null;
 
   if (
@@ -395,75 +386,17 @@ export default function Home() {
 
   if (gameState === "lobby" || gameState === "LOBBY") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-950 flex items-center justify-center p-6">
-        <div className="bg-gray-900/90 border-4 border-red-600 rounded-3xl p-12 w-full max-w-2xl shadow-2xl shadow-red-900/50">
-          <div className="text-center">
-            {offlineBanner}
-            <h1 className="heading text-6xl md:text-7xl text-red-500 mb-8">
-              JOIN THE GAME
-            </h1>
-            <p className="text-gray-300 mb-12 text-2xl font-semibold">
-              Enter your name to join. No mercy, no refunds.
-            </p>
-            {!players.find((p) => p.id === playerId) ? (
-              <div className="space-y-8">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Your Name"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && joinGame()}
-                  maxLength={20}
-                  className="input-netflix w-full"
-                  autoFocus
-                />
-                <button
-                  onClick={joinGame}
-                  disabled={!isValidPlayerName(playerName) || isSubmitting || !!playerId}
-                  className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:bg-gray-700"
-                >
-                  {isSubmitting ? "ENTERING..." : playerId ? "JOINED! Loading..." : "JOIN GAME"}
-                </button>
-              </div>
-            ) : (
-              <div>
-                <h2 className="text-3xl font-black text-gray-200 mb-8 uppercase tracking-wide">
-                  Players in Lobby ({players.length})
-                </h2>
-                <div className="space-y-4 mb-10">
-                  {players.map((player, i) => (
-                    <div
-                      key={player.id}
-                      className={`p-6 rounded-2xl font-bold border-4 transition-all ${
-                        player.id === playerId
-                          ? "bg-red-700/50 text-white border-red-400 shadow-lg shadow-red-500/30"
-                          : "bg-gray-800/50 text-gray-200 border-gray-700"
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl font-black">
-                          {player.name} {player.id === playerId && <span className="text-red-400">(YOU)</span>}
-                        </span>
-                        <span className="text-xs uppercase tracking-widest text-gray-500 font-bold">LIVES: 3</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {players.length >= 1 && (
-                  <button
-                    onClick={startGame}
-                    disabled={isSubmitting}
-                    className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:bg-gray-700"
-                  >
-                    {isSubmitting ? "STARTING..." : "START GAME"}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <LobbyScreen
+        players={players}
+        playerId={playerId}
+        playerName={playerName}
+        setPlayerName={setPlayerName}
+        joinGame={joinGame}
+        isSubmitting={isSubmitting}
+        startGame={startGame}
+        inputRef={inputRef}
+        offlineBanner={offlineBanner}
+      />
     );
   }
 
@@ -509,61 +442,15 @@ export default function Home() {
 
   if (gameState === "final") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-600 via-red-800 to-black flex items-center justify-center p-4">
-        <div className="bg-gray-900 border-4 border-yellow-500 rounded-3xl p-12 w-full max-w-lg shadow-2xl">
-          {offlineBanner}
-          <h1 className="heading text-6xl text-center text-yellow-400 mb-12 uppercase tracking-wide">
-            FINAL ROUND
-          </h1>
-
-          <div className="text-center mb-12">
-            {winner ? (
-              <div>
-                <p className="text-yellow-200 text-2xl mb-6 font-bold uppercase tracking-wide">
-                  Victory Claimed
-                </p>
-                <div className="p-6 bg-yellow-600 rounded-2xl text-black font-black text-3xl border-4 border-yellow-400">
-                  {winner.name} - {scores[winner.id] || 0} points
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p className="text-yellow-200 text-2xl mb-6 font-bold uppercase tracking-wide">
-                  Survivors Remaining
-                </p>
-                <div className="space-y-3">
-                  {alivePlayers.map((player) => (
-                    <div
-                      key={player.id}
-                      className="p-4 bg-yellow-800/50 rounded-xl text-yellow-100 font-bold text-xl border-2 border-yellow-600"
-                    >
-                      {player.name} - {scores[player.id] || 0} points
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => {
-              if (socketRef.current) {
-                socketRef.current.emit(
-                  "player:final",
-                  { token: gameToken },
-                  (data: any) => {
-                    if (!data.success)
-                      setError(data.error || "Failed to determine winner");
-                  }
-                );
-              }
-            }}
-            className="btn-primary w-full bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 border-yellow-500/30"
-          >
-            DETERMINE WINNER
-          </button>
-        </div>
-      </div>
+      <FinalScreen
+        winner={winner}
+        scores={scores}
+        alivePlayers={alivePlayers}
+        gameToken={gameToken}
+        socketRef={socketRef}
+        setError={setError}
+        offlineBanner={offlineBanner}
+      />
     );
   }
 
@@ -582,11 +469,13 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-900 to-black flex items-center justify-center text-red-300 text-2xl">
-      <div className="text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#020309]">
+      <div className="surface glass text-center space-y-4">
         {offlineBanner}
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-400 mx-auto mb-4"></div>
-        Loading the chamber...
+        <div className="spinner mx-auto" />
+        <p className="text-sm uppercase tracking-[0.24em] text-[rgba(148,163,184,0.7)]">
+          Loading the chamber…
+        </p>
       </div>
     </div>
   );

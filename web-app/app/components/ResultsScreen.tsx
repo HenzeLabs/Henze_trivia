@@ -1,15 +1,10 @@
 import React from "react";
-import {
-  getSavage,
-  savageCorrect,
-  savageWrong,
-  savageWaiting,
-} from "./savageFeedback";
+import { getSavage, savageCorrect, savageWrong } from "./savageFeedback";
 
 interface ResultsScreenProps {
   players: any[];
   ghosts: string[];
-  scores: any;
+  scores: Record<string, number>;
   playerId: string;
   isSubmitting: boolean;
   resetGame: () => void;
@@ -32,65 +27,113 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({
       isDead: ghosts.includes(player.id),
     }))
     .sort((a, b) => b.score - a.score);
+
   const winner = sortedPlayers[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-950 flex flex-col items-center justify-center p-8">
-      <div className="w-full max-w-3xl bg-gray-900/90 border-4 border-red-600 rounded-3xl p-12 shadow-2xl shadow-red-900/50">
-        {offlineBanner}
-        <h1 className="heading text-6xl md:text-7xl text-center text-red-500 mb-12 uppercase tracking-wide">
-          FINAL RESULTS
-        </h1>
-        <div className="text-center mb-12">
-          <div className="text-4xl text-white mb-4 font-black">{winner?.name}</div>
-          <div className="text-2xl text-red-400 font-bold uppercase tracking-wide">
-            {winner
-              ? `${winner.score} POINTS - ${getSavage(savageCorrect)}`
-              : getSavage(savageWrong)}
-          </div>
-        </div>
-        <div className="flex flex-col w-full gap-3 mb-12">
-          {sortedPlayers.map((player, i) => (
-            <div
-              key={player.id}
-              className={`flex items-center justify-between p-6 rounded-2xl font-bold border-4 text-xl ${
-                i === 0
-                  ? "bg-red-700/50 text-white border-red-400 shadow-lg shadow-red-500/30"
-                  : player.isDead
-                  ? "bg-gray-800/30 text-gray-600 border-gray-800"
-                  : player.id === playerId
-                  ? "bg-red-900/40 text-white border-red-600"
-                  : "bg-gray-800/50 text-gray-200 border-gray-700"
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-base uppercase tracking-widest">
-                  {i === 0
-                    ? "WINNER"
-                    : player.isDead
-                    ? "ELIMINATED"
-                    : `#${i + 1}`}
-                </span>
-                <span className="text-2xl font-black">
-                  {player.name}
-                  {player.id === playerId && <span className="text-red-400"> (YOU)</span>}
-                </span>
-              </div>
-              <div className="text-lg font-black">
-                {player.score} PTS
-              </div>
+    <div className="min-h-screen w-full flex items-center justify-center px-6 py-14 relative overflow-hidden">
+      {offlineBanner}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-30%] left-[10%] w-[420px] h-[420px] bg-[rgba(244,63,94,0.14)] blur-[210px]" />
+        <div className="absolute bottom-[-34%] right-[12%] w-[480px] h-[480px] bg-[rgba(34,211,238,0.1)] blur-[230px]" />
+      </div>
+
+      <div className="max-w-5xl w-full space-y-8 relative z-10">
+        <header className="surface text-center space-y-6">
+          <span className="pill">Game Complete · Survivors Accounted For</span>
+          <h1 className="heading text-6xl tracking-[0.24em] glow-text">
+            Final Reckoning
+          </h1>
+          <p className="text-sm uppercase tracking-[0.24em] text-[rgba(148,163,184,0.7)]">
+            Scores locked · ghosts archived · smack talk begins now
+          </p>
+          {winner ? (
+            <div className="glass rounded-[24px] border border-[rgba(148,163,184,0.16)] px-8 py-6 max-w-2xl mx-auto space-y-2">
+              <p className="subtitle uppercase tracking-[0.28em] text-xs text-[rgba(148,163,184,0.75)]">
+                Sole Survivor
+              </p>
+              <h2 className="heading text-4xl tracking-[0.18em] text-[rgba(244,63,94,0.85)]">
+                {winner.name}
+              </h2>
+              <p className="text-base text-[rgba(226,232,240,0.85)]">
+                {winner.score} pts · {getSavage(savageCorrect)}
+              </p>
             </div>
-          ))}
-        </div>
-        <button
-          onClick={resetGame}
-          disabled={isSubmitting}
-          className="btn-primary w-full"
-        >
-          {isSubmitting
-            ? "RESETTING..."
-            : "PLAY AGAIN"}
-        </button>
+          ) : (
+            <p className="text-base text-[rgba(226,232,240,0.8)]">
+              {getSavage(savageWrong)}
+            </p>
+          )}
+        </header>
+
+        <section className="surface space-y-6">
+          <h3 className="subtitle uppercase tracking-[0.24em] text-xs text-[rgba(148,163,184,0.75)]">
+            Leaderboard
+          </h3>
+          <div className="space-y-4">
+            {sortedPlayers.map((player, index) => {
+              const isSelf = player.id === playerId;
+              const statusLabel =
+                index === 0
+                  ? "Champion"
+                  : player.isDead
+                  ? "Ghosted"
+                  : `#${index + 1}`;
+
+              return (
+                <article
+                  key={player.id}
+                  className={`flex items-center gap-4 rounded-[22px] border px-5 py-4 md:px-6 md:py-5 transition-all ${
+                    index === 0
+                      ? "border-[rgba(244,63,94,0.55)] bg-[rgba(244,63,94,0.12)] shadow-[0_22px_40px_rgba(244,63,94,0.18)]"
+                      : player.isDead
+                      ? "border-[rgba(148,163,184,0.08)] bg-[rgba(9,12,23,0.55)] opacity-60"
+                      : isSelf
+                      ? "border-[rgba(34,211,238,0.55)] bg-[rgba(34,211,238,0.12)]"
+                      : "border-[rgba(148,163,184,0.12)] bg-[rgba(9,12,23,0.62)]"
+                  }`}
+                >
+                  <div className="flex flex-col min-w-[120px] text-left">
+                    <span className="subtitle uppercase tracking-[0.28em] text-xs text-[rgba(148,163,184,0.7)]">
+                      {statusLabel}
+                    </span>
+                    <span className="heading text-2xl tracking-[0.16em]">
+                      {player.name}
+                      {isSelf && <span> · you</span>}
+                    </span>
+                  </div>
+                  <div className="flex-1" />
+                  <div className="text-right space-y-1">
+                    <span className="badge">Score {player.score}</span>
+                    <div className="text-xs uppercase tracking-[0.24em] text-[rgba(148,163,184,0.6)]">
+                      {player.isDead ? "Eliminated" : "Survived"}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <footer className="surface glass flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <h4 className="subtitle uppercase tracking-[0.24em] text-xs text-[rgba(148,163,184,0.75)]">
+              Rematch Protocol
+            </h4>
+            <p className="text-sm text-[rgba(203,213,225,0.75)] max-w-lg">
+              Reset clears the board, restocks the question vault, and sacrifices
+              the least dramatic player for good luck. Everyone rejoins the
+              lobby. No skipping lines.
+            </p>
+          </div>
+          <button
+            onClick={resetGame}
+            disabled={isSubmitting}
+            className="btn-primary min-w-[220px] justify-center"
+          >
+            {isSubmitting ? "Resetting..." : "Queue Up Another Run"}
+          </button>
+        </footer>
       </div>
     </div>
   );

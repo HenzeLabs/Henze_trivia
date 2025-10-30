@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import io from "socket.io-client";
 import {
   savageCorrect,
@@ -68,7 +68,6 @@ const QuestionScreen: React.FC<QuestionScreenProps> = (props) => {
           })
         );
       }
-      // Auto-advance to reveal if all alive players answered
       if (
         game.state === "ANSWERS_LOCKED" ||
         (game.state === "REVEAL" && submitted)
@@ -82,6 +81,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = (props) => {
   }, [submitted, props.playerId]);
 
   const handleSubmit = (i: number) => {
+    if (submitted || !gameState || gameState.state !== "ASKING") return;
     setSelected(i);
     setSubmitted(true);
     socket.emit(
@@ -97,167 +97,285 @@ const QuestionScreen: React.FC<QuestionScreenProps> = (props) => {
     );
   };
 
-  // If no game state, show loading
+  // Prepare players data before any early returns (hooks must be called unconditionally)
+  const players = useMemo(() => gameState?.players || [], [gameState?.players]);
+  const scoreboard = useMemo(() => {
+    const source = props.scoreboard?.length ? props.scoreboard : players;
+    return source.map((player: any) => ({
+      id: player.id,
+      name: player.name,
+      score: player.score ?? 0,
+      isGhost: player.isGhost,
+      isYou:
+        typeof player.isYou !== "undefined"
+          ? player.isYou
+          : player.id === props.playerId,
+      lives:
+        typeof player.lives !== "undefined"
+          ? player.lives
+          : props.playerLives ?? 0,
+    }));
+  }, [players, props.playerId, props.playerLives, props.scoreboard]);
+
   if (!gameState || !gameState.question) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading question...</div>
+        <div className="spinner" />
       </div>
     );
   }
 
-  // Main question UI
   const { question } = gameState;
-  const players = gameState.players || [];
   const alivePlayers = players.filter((p: any) => !p.isGhost);
   const answeredAlive = alivePlayers.filter((p: any) => p.hasAnswered).length;
   const totalAlive = alivePlayers.length;
-  const isReveal = gameState.state === "REVEAL";
-  const correctIdx = question.correctAnswer ?? question.answer_index;
+  const isReveal = gameState.state === "REVEAL" || props.isReveal;
+  const correctIdx =
+    question.correctAnswer ?? question.answer_index ?? question.correct;
+  const waitingHeadline =
+    props.waitingHeadline ||
+    (totalAlive > 0
+      ? `${answeredAlive}/${totalAlive} survivors locked in`
+      : "Waiting for survivors to join");
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center p-8 v-gap">
-      <div className="box w-full max-w-2xl flex flex-col items-center v-gap">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div>
-            <div className="text-lg font-extrabold text-red-600">
-              ROUND {question.round} / {question.totalRounds}
+    <div className="min-h-screen w-full flex items-center justify-center px-6 py-12 relative overflow-hidden">
+      {props.offlineBanner}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-35%] right-[12%] w-[460px] h-[460px] bg-[rgba(34,211,238,0.1)] blur-[220px]" />
+        <div className="absolute bottom-[-32%] left-[18%] w-[520px] h-[520px] bg-[rgba(244,63,94,0.1)] blur-[240px]" />
+      </div>
+
+      <div className="max-w-6xl w-full grid gap-8 lg:grid-cols-[1.35fr_0.65fr] relative z-10">
+        <section className="surface space-y-8">
+          <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-2">
+              <span className="pill">Round {question.round}</span>
+              <h1 className="heading text-4xl tracking-[0.18em]">
+                {question.category || "Unknown Category"}
+              </h1>
+              <p className="text-sm text-[rgba(203,213,225,0.7)] uppercase tracking-[0.22em]">
+                {question.round}/{question.totalRounds} ·{" "}
+                {totalAlive} survivors alive · {answeredAlive} locked in
+              </p>
             </div>
-            <div className="text-sm text-red-500 mt-1 font-bold">
-              {question.category}
-            </div>
-          </div>
-        </div>
-        <h2 className="heading text-3xl text-white mb-8 text-center">
-          {question.text || question.question}
-        </h2>
-        <div className="flex flex-col w-full v-gap">
-          {question.options.map((option: string, i: number) => {
-            let buttonClass =
-              "btn-primary text-left min-h-[64px] flex items-center text-lg";
-            if (isReveal) {
-              if (i === correctIdx) {
-                buttonClass += " bg-red-600 text-white border-none opacity-100";
-              } else if (selected === i && i !== correctIdx) {
-                buttonClass +=
-                  " bg-[#0d0d0d] text-red-600 border-none opacity-100";
-              } else {
-                buttonClass +=
-                  " bg-[#0d0d0d] text-gray-600 border-none opacity-50";
-              }
-            } else {
-              if (selected === i) {
-                buttonClass += " bg-red-600 text-white border-none opacity-100";
-              } else {
-                buttonClass +=
-                  " bg-[#0d0d0d] text-white border-none hover:bg-red-700 hover:text-white";
-              }
-            }
-            return (
-              <button
-                key={i}
-                onClick={() => !isReveal && !submitted && handleSubmit(i)}
-                disabled={isReveal || submitted || selected !== null}
-                className={buttonClass}
+            <div className="glass rounded-[18px] border border-[rgba(148,163,184,0.14)] px-5 py-3 flex flex-col gap-1 items-start min-w-[180px]">
+              <span className="text-xs uppercase tracking-[0.24em] text-[rgba(148,163,184,0.7)]">
+                Status
+              </span>
+              <span
+                className={`text-sm font-semibold ${
+                  isReveal
+                    ? "text-[rgba(251,191,36,0.9)]"
+                    : submitted
+                    ? "text-[rgba(34,211,238,0.85)]"
+                    : "text-[rgba(203,213,225,0.8)]"
+                }`}
               >
-                <span className="font-bold mr-4 text-red-600 text-2xl">
-                  {String.fromCharCode(65 + i)}.
-                </span>
-                <span className="leading-tight">{option}</span>
-              </button>
-            );
-          })}
-        </div>
-        {/* Waiting state */}
-        {submitted && !isReveal && (
-          <div className="box w-full mt-8 text-center">
-            <p className="text-red-600 font-black text-xl">{waitingMsg}</p>
-            <p className="text-red-400 font-medium text-sm mt-2">
-              {answeredAlive}/{totalAlive} survivors answered
-            </p>
-          </div>
-        )}
-        {/* Reveal state */}
-        {isReveal && (
-          <div className="box w-full mt-8 text-center">
-            <p className="text-red-600 font-black text-xl mb-4">
-              {selected === correctIdx
-                ? getPersonalizedSavage("correct", {
-                    playerName: props.playerId,
-                    groupNames: players.map((p: any) => p.name),
-                    currentQuestion: question.text || question.question,
-                  })
-                : getPersonalizedSavage("wrong", {
-                    playerName: props.playerId,
-                    groupNames: players.map((p: any) => p.name),
-                    currentQuestion: question.text || question.question,
-                  })}
-            </p>
-            <p className="text-white font-medium leading-tight">
-              Correct answer: {String.fromCharCode(65 + correctIdx)}
-              <br />
-              {question.explanation}
-            </p>
-          </div>
-        )}
-        {/* Scoreboard */}
-        <div className="box w-full mt-8">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
-            <span className="heading text-sm text-red-600">SCOREBOARD</span>
-            <span className="text-red-400 text-xs font-bold">
-              {answeredAlive}/{totalAlive} survivors answered
-            </span>
-          </div>
-          <div className="flex flex-col w-full v-gap">
-            {players.length === 0 && (
-              <div className="text-center text-sm text-red-600">
-                Waiting for players to join...
-              </div>
-            )}
-            <div className="subtitle text-red-400 font-bold mb-2 text-center">
-              The scoreboard is just a leaderboard for future therapy bills.
+                {isReveal
+                  ? "Reveal Sequence"
+                  : submitted
+                  ? "Answer Locked"
+                  : "Awaiting Answer"}
+              </span>
             </div>
-            {players.map((player: any, index: number) => {
-              const rankLabel =
-                index === 0 ? "#1 (Top Menace)" : `${index + 1}.`;
+          </header>
+
+          <article className="glass rounded-[24px] border border-[rgba(148,163,184,0.18)] p-6 md:p-8 space-y-6">
+            <p className="subtitle uppercase tracking-[0.25em] text-xs text-[rgba(148,163,184,0.7)]">
+              Question {question.questionNumber ?? question.round}
+            </p>
+            <h2 className="heading text-3xl md:text-4xl text-left leading-tight glow-text">
+              {question.text || question.question}
+            </h2>
+            <p className="text-sm text-[rgba(148,163,184,0.75)]">
+              Choose wisely. Wrong answers cost a life. Tie-breakers are brutal.
+            </p>
+          </article>
+
+          <div className="flex flex-col gap-4">
+            {question.options?.map((option: string, index: number) => {
+              const isSelected = selected === index;
+              const isCorrect = typeof correctIdx === "number" && correctIdx === index;
+              const revealState = isReveal
+                ? isCorrect
+                  ? "correct"
+                  : isSelected
+                  ? "selected"
+                  : "inactive"
+                : isSelected
+                ? "pending"
+                : "default";
+
+              const baseClasses =
+                "relative overflow-hidden rounded-[22px] border px-5 py-4 md:px-6 md:py-5 text-left transition-all duration-200 flex items-center gap-4";
+
+              const stateClasses: Record<string, string> = {
+                default:
+                  "border-[rgba(148,163,184,0.16)] bg-[rgba(10,13,24,0.65)] hover:border-[rgba(34,211,238,0.4)] hover:bg-[rgba(34,211,238,0.06)] cursor-pointer",
+                pending:
+                  "border-[rgba(34,211,238,0.55)] bg-[rgba(34,211,238,0.12)] shadow-[0_18px_32px_rgba(34,211,238,0.18)]",
+                correct:
+                  "border-[rgba(34,197,94,0.55)] bg-[rgba(34,197,94,0.12)] shadow-[0_22px_40px_rgba(34,197,94,0.18)]",
+                selected:
+                  "border-[rgba(244,63,94,0.5)] bg-[rgba(244,63,94,0.08)] opacity-70",
+                inactive: "border-[rgba(148,163,184,0.08)] opacity-40",
+              };
+
               return (
-                <div
-                  key={player.id}
-                  className={`box flex items-center justify-between text-sm font-bold transition-all duration-300 ${
-                    player.isGhost
-                      ? "bg-[#0d0d0d] text-gray-700 border-none opacity-60"
-                      : index === 0
-                      ? "bg-red-700 text-white border-none scale-105 shadow-xl"
-                      : player.id === props.playerId
-                      ? "bg-red-600 text-white border-none"
-                      : "bg-[#0d0d0d] text-white border-none"
+                <button
+                  key={option}
+                  onClick={() => handleSubmit(index)}
+                  disabled={isReveal || submitted || selected !== null}
+                  className={`${baseClasses} ${stateClasses[revealState]} ${
+                    isReveal || submitted || selected !== null ? "cursor-default" : ""
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-red-400 mr-2">
-                      {rankLabel}
-                    </span>
-                    <span>
-                      {player.name}
-                      {player.id === props.playerId && " (You, disaster)"}
-                      {player.isGhost && " (Ghost)"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs sm:text-sm">
-                    <span>{player.score} pts</span>
-                    <span className="ml-2 flex gap-1">
-                      {[...Array(player.lives || 0)].map((_, idx) => (
-                        <span key={idx} className="text-red-600 text-xl">
-                          ❤️
-                        </span>
-                      ))}
-                    </span>
-                  </div>
-                </div>
+                  <span className="heading text-3xl text-[rgba(244,63,94,0.85)]">
+                    {String.fromCharCode(65 + index)}
+                  </span>
+                  <span className="flex-1 text-left text-[rgba(226,232,240,0.92)] font-medium leading-relaxed">
+                    {option}
+                  </span>
+                  {revealState === "correct" && (
+                    <span className="score-pill">Correct</span>
+                  )}
+                  {revealState === "pending" && (
+                    <span className="score-pill">Locked</span>
+                  )}
+                </button>
               );
             })}
           </div>
-        </div>
+
+          <div className="glass rounded-[22px] border border-[rgba(148,163,184,0.18)] p-6 space-y-3">
+            {!isReveal && (
+              <>
+                <p className="text-sm font-semibold text-[rgba(226,232,240,0.8)]">
+                  {waitingHeadline}
+                </p>
+                <p className="text-xs uppercase tracking-[0.24em] text-[rgba(148,163,184,0.6)]">
+                  {waitingMsg}
+                </p>
+              </>
+            )}
+            {isReveal && (
+              <div className="space-y-3">
+                <p className="text-base font-semibold text-[rgba(226,232,240,0.98)]">
+                  {selected === correctIdx
+                    ? getPersonalizedSavage("correct", {
+                        playerName: props.playerId,
+                        groupNames: players.map((p: any) => p.name),
+                        currentQuestion: question.text || question.question,
+                      })
+                    : getPersonalizedSavage("wrong", {
+                        playerName: props.playerId,
+                        groupNames: players.map((p: any) => p.name),
+                        currentQuestion: question.text || question.question,
+                      })}
+                </p>
+                <div className="text-sm text-[rgba(203,213,225,0.75)] leading-relaxed">
+                  <span className="font-semibold text-[rgba(34,211,238,0.85)]">
+                    Correct answer:{" "}
+                    {String.fromCharCode(
+                      typeof correctIdx === "number" ? 65 + correctIdx : 63
+                    )}
+                  </span>
+                  {question.explanation && (
+                    <>
+                      <br />
+                      {question.explanation}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <aside className="surface glass space-y-6 h-full">
+          <div className="space-y-4">
+            <h3 className="heading text-3xl tracking-[0.18em]">
+              Survivor Board
+            </h3>
+            <p className="text-xs uppercase tracking-[0.24em] text-[rgba(148,163,184,0.65)]">
+              Scores auto-update · ghosts fall to the bottom
+            </p>
+            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+              {scoreboard.map((player) => {
+                const isSelf = player.id === props.playerId || player.isYou;
+                return (
+                  <div
+                    key={player.id}
+                    className={`flex items-center gap-4 rounded-[18px] border px-4 py-3 ${
+                      player.isGhost
+                        ? "border-[rgba(148,163,184,0.08)] bg-[rgba(10,13,24,0.45)] opacity-60"
+                        : isSelf
+                        ? "border-[rgba(34,211,238,0.5)] bg-[rgba(34,211,238,0.12)]"
+                        : "border-[rgba(148,163,184,0.12)] bg-[rgba(9,12,23,0.6)]"
+                    }`}
+                  >
+                    <span className="heading text-2xl text-[rgba(244,63,94,0.85)] w-10">
+                      {player.isGhost ? "☠" : "★"}
+                    </span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-[rgba(226,232,240,0.95)]">
+                        {player.name} {isSelf && <span>· you</span>}
+                      </p>
+                      <div className="badge-list mt-1">
+                        <span className="badge">Score {player.score}</span>
+                        {!player.isGhost && (
+                          <span className="badge">
+                            Lives{" "}
+                            {Array.from({ length: props.maxLivesState || 3 })
+                              .map((_, idx) =>
+                                idx <
+                                (player.lives ?? (props.playerLives ?? 0))
+                                  ? "●"
+                                  : "○"
+                              )
+                              .join(" ")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="glass rounded-[20px] border border-[rgba(148,163,184,0.12)] p-5 space-y-4">
+            <h4 className="subtitle uppercase tracking-[0.24em] text-xs text-[rgba(148,163,184,0.75)]">
+              Game Stats
+            </h4>
+            <div className="stat-grid">
+              <div className="stat-card">
+                <span className="text-xs uppercase tracking-[0.28em] text-[rgba(148,163,184,0.68)]">
+                  Alive
+                </span>
+                <span className="heading text-3xl">{totalAlive}</span>
+              </div>
+              <div className="stat-card">
+                <span className="text-xs uppercase tracking-[0.28em] text-[rgba(148,163,184,0.68)]">
+                  Answered
+                </span>
+                <span className="heading text-3xl">{answeredAlive}</span>
+              </div>
+              <div className="stat-card">
+                <span className="text-xs uppercase tracking-[0.28em] text-[rgba(148,163,184,0.68)]">
+                  Lives Left
+                </span>
+                <span className="heading text-3xl">
+                  {props.playerLives ?? "?"}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs uppercase tracking-[0.25em] text-[rgba(148,163,184,0.55)]">
+              Answer fast. The room locks when every survivor taps in.
+            </p>
+          </div>
+        </aside>
       </div>
     </div>
   );
