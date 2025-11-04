@@ -165,6 +165,26 @@ maxRounds: 20,  // Change this number
 
 ---
 
+## 🚀 Deploy to Production
+
+**Quick Deploy to Render:**
+```bash
+./deploy.sh
+```
+
+**Documentation:**
+- [QUICK_DEPLOY.md](QUICK_DEPLOY.md) - Quick reference
+- [DEPLOYMENT_READY.md](DEPLOYMENT_READY.md) - Complete guide
+- [RENDER_DEPLOY.md](RENDER_DEPLOY.md) - Detailed instructions
+- [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) - Step-by-step
+
+**Test Production Readiness:**
+```bash
+cd web-app && npm run test:production
+```
+
+---
+
 ## 🔧 Troubleshooting
 
 **"No questions loaded"**

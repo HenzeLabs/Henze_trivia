@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: henze-trivia
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd web-app && npm install && npm run build
+    startCommand: cd web-app && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: ENFORCE_HTTPS
+        value: false

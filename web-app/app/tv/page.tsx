@@ -31,7 +31,9 @@ const ScreenShell = ({ children }: { children: React.ReactNode }) => (
       <div className="absolute -bottom-48 right-[10%] h-[620px] w-[620px] rounded-full bg-[rgba(244,63,94,0.12)] blur-[260px]" />
       <div className="absolute inset-0 bg-[radial-gradient(130%_110%_at_50%_-20%,rgba(63,185,255,0.08)_0%,transparent_55%)]" />
     </div>
-    <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-8">{children}</div>
+    <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-8">
+      {children}
+    </div>
   </div>
 );
 
@@ -50,6 +52,8 @@ export default function TVPage() {
     totalAlive: number;
     allAliveAnswered?: boolean;
   }>({ answeredAlive: 0, totalAlive: 0, allAliveAnswered: false });
+  const [socketError, setSocketError] = useState<string>("");
+  const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -58,37 +62,55 @@ export default function TVPage() {
   }, []);
 
   useEffect(() => {
-    const socketInstance = io();
+    let socketInstance = io();
 
-    socketInstance.on("game:update", (data) => {
-      setGameState(data.state);
-      setPlayers(data.players || []);
-      setCurrentQuestion(data.question || null);
-      setRound(data.round || 0);
-      setMaxRounds((prev) => {
-        const next = data.maxRounds ?? data.totalRounds;
-        return typeof next === "number" ? next : prev;
+    const setupSocket = () => {
+      socketInstance.on("game:update", (data) => {
+        setGameState(data.state);
+        setPlayers(data.players || []);
+        setCurrentQuestion(data.question || null);
+        setRound(data.round || 0);
+        setMaxRounds((prev) => {
+          const next = data.maxRounds ?? data.totalRounds;
+          return typeof next === "number" ? next : prev;
+        });
+        setScores(data.scores || {});
+        setGhosts(data.ghosts || []);
+        setWinner(data.winner || null);
+        setAnswerSummary(
+          data.answerSummary || {
+            answeredAlive: (data.players || []).filter(
+              (player: Player) => !player.isGhost && player.hasAnswered
+            ).length,
+            totalAlive: (data.players || []).filter(
+              (player: Player) => !player.isGhost
+            ).length,
+            allAliveAnswered: data.allAnswered ?? false,
+          }
+        );
+        setSocketError("");
+        setReconnectAttempts(0);
       });
-      setScores(data.scores || {});
-      setGhosts(data.ghosts || []);
-      setWinner(data.winner || null);
-      setAnswerSummary(
-        data.answerSummary || {
-          answeredAlive: (data.players || []).filter(
-            (player: Player) => !player.isGhost && player.hasAnswered
-          ).length,
-          totalAlive: (data.players || []).filter(
-            (player: Player) => !player.isGhost
-          ).length,
-          allAliveAnswered: data.allAnswered ?? false,
-        }
-      );
-    });
+
+      socketInstance.on("connect_error", (err) => {
+        setSocketError("Connection error. Trying to reconnect…");
+      });
+      socketInstance.on("disconnect", (reason) => {
+        setSocketError("Connection lost. Trying to reconnect…");
+        let attempts = reconnectAttempts + 1;
+        setReconnectAttempts(attempts);
+        setTimeout(() => {
+          socketInstance.connect();
+        }, Math.min(2000 * Math.pow(2, attempts), 15000));
+      });
+    };
+
+    setupSocket();
 
     return () => {
       socketInstance.disconnect();
     };
-  }, []);
+  }, [reconnectAttempts]);
 
   const scoreboard = useMemo(() => {
     return players
@@ -121,6 +143,30 @@ export default function TVPage() {
   const hostDisplay = stripProtocol(hostUrl);
   const tvDisplay = `${stripProtocol(hostUrl)}/tv`;
 
+  if (socketError) {
+    return (
+      <ScreenShell>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="surface glass flex flex-col items-center gap-4 px-10 py-12 text-center">
+            <div className="spinner" />
+            <p className="text-sm uppercase tracking-[0.24em] text-[rgba(244,63,94,0.8)]">
+              {socketError}
+            </p>
+            <button
+              className="mt-4 px-6 py-2 rounded bg-[rgba(34,211,238,0.8)] text-white font-bold"
+              onClick={() => {
+                setSocketError("");
+                setReconnectAttempts(0);
+                window.location.reload();
+              }}
+            >
+              Reconnect
+            </button>
+          </div>
+        </div>
+      </ScreenShell>
+    );
+  }
   if (normalizedState === "lobby") {
     return (
       <ScreenShell>
@@ -193,8 +239,16 @@ export default function TVPage() {
                 Share These Links
               </p>
               <div className="space-y-3">
-                <DisplayLink label="Player Lobby" value={hostDisplay} helper="Players join from phones" />
-                <DisplayLink label="TV Display" value={tvDisplay} helper="Keep this open on the big screen" />
+                <DisplayLink
+                  label="Player Lobby"
+                  value={hostDisplay}
+                  helper="Players join from phones"
+                />
+                <DisplayLink
+                  label="TV Display"
+                  value={tvDisplay}
+                  helper="Keep this open on the big screen"
+                />
               </div>
             </div>
 
@@ -214,9 +268,17 @@ export default function TVPage() {
     );
   }
 
-  if ((normalizedState === "asking" || normalizedState === "question" || normalizedState === "reveal") && currentQuestion) {
+  if (
+    (normalizedState === "asking" ||
+      normalizedState === "question" ||
+      normalizedState === "reveal") &&
+    currentQuestion
+  ) {
     const correctIdx = getCorrectIndex(currentQuestion);
-    const progress = aliveCount > 0 ? Math.min(100, Math.max(0, (answeredCount / aliveCount) * 100)) : 0;
+    const progress =
+      aliveCount > 0
+        ? Math.min(100, Math.max(0, (answeredCount / aliveCount) * 100))
+        : 0;
     const scoreboardTop = scoreboard.slice(0, 6);
 
     return (
@@ -266,7 +328,8 @@ export default function TVPage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           {currentQuestion.options?.map((option: string, index: number) => {
-            const isCorrect = typeof correctIdx === "number" && correctIdx === index;
+            const isCorrect =
+              typeof correctIdx === "number" && correctIdx === index;
             let tone = "border-[rgba(255,255,255,0.1)] bg-[rgba(9,12,23,0.7)]";
             if (isReveal) {
               tone = isCorrect
@@ -279,7 +342,11 @@ export default function TVPage() {
                 className={`glass rounded-[20px] border px-8 py-6 text-left transition-all duration-200 ${tone}`}
               >
                 <div className="flex items-start gap-5">
-                  <span className={`heading text-3xl ${isCorrect ? "text-[rgba(63,214,165,0.9)]" : ""}`}>
+                  <span
+                    className={`heading text-3xl ${
+                      isCorrect ? "text-[rgba(63,214,165,0.9)]" : ""
+                    }`}
+                  >
                     {String.fromCharCode(65 + index)}
                   </span>
                   <p className="text-xl text-[rgba(247,249,252,0.95)] leading-relaxed">
@@ -294,7 +361,11 @@ export default function TVPage() {
         <section className="surface space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <p className="text-lg font-semibold text-[rgba(231,234,240,0.92)]">
-              {isReveal ? "Answers revealed" : answerSummary.allAliveAnswered ? "Locked in—revealing shortly" : "Waiting for the last survivors"}
+              {isReveal
+                ? "Answers revealed"
+                : answerSummary.allAliveAnswered
+                ? "Locked in—revealing shortly"
+                : "Waiting for the last survivors"}
             </p>
             <span className="text-xs uppercase tracking-[0.2em] text-[rgba(148,163,184,0.65)]">
               {Math.max(aliveCount - answeredCount, 0)} still deciding
@@ -304,9 +375,14 @@ export default function TVPage() {
           {isReveal && (
             <div className="glass rounded-[18px] border border-[rgba(148,163,184,0.12)] px-6 py-5 text-sm text-[rgba(203,213,225,0.85)]">
               <p className="font-semibold text-[rgba(247,249,252,0.95)]">
-                Correct answer: {typeof correctIdx === "number" ? String.fromCharCode(65 + correctIdx) : "Unknown"}
+                Correct answer:{" "}
+                {typeof correctIdx === "number"
+                  ? String.fromCharCode(65 + correctIdx)
+                  : "Unknown"}
               </p>
-              {currentQuestion.explanation && <p className="mt-2">{currentQuestion.explanation}</p>}
+              {currentQuestion.explanation && (
+                <p className="mt-2">{currentQuestion.explanation}</p>
+              )}
             </div>
           )}
         </section>
@@ -338,9 +414,15 @@ export default function TVPage() {
                 </div>
                 <div className="mt-4 flex items-center justify-between text-sm uppercase tracking-[0.22em] text-[rgba(148,163,184,0.65)]">
                   <span>
-                    {player.isGhost ? "Ghosted" : player.hasAnswered ? "Answered" : "Thinking"}
+                    {player.isGhost
+                      ? "Ghosted"
+                      : player.hasAnswered
+                      ? "Answered"
+                      : "Thinking"}
                   </span>
-                  <span>{(player.lives ?? 0) > 0 ? `${player.lives} lives` : "Out"}</span>
+                  <span>
+                    {(player.lives ?? 0) > 0 ? `${player.lives} lives` : "Out"}
+                  </span>
                 </div>
               </article>
             ))}
@@ -361,7 +443,9 @@ export default function TVPage() {
               <p className="subtitle uppercase tracking-[0.24em] text-xs text-[rgba(148,163,184,0.72)]">
                 Survivor Identified
               </p>
-              <p className="heading text-4xl text-[rgba(244,63,94,0.85)]">{winner.name}</p>
+              <p className="heading text-4xl text-[rgba(244,63,94,0.85)]">
+                {winner.name}
+              </p>
               <p className="text-base text-[rgba(203,213,225,0.8)]">
                 {Number(scores[winner.id] ?? 0).toLocaleString()} pts
               </p>
@@ -387,7 +471,8 @@ export default function TVPage() {
                   {player.name}
                 </p>
                 <p className="text-xs uppercase tracking-[0.2em] text-[rgba(148,163,184,0.65)]">
-                  {Number(player.score ?? 0).toLocaleString()} pts · {player.lives ?? 0} lives
+                  {Number(player.score ?? 0).toLocaleString()} pts ·{" "}
+                  {player.lives ?? 0} lives
                 </p>
               </article>
             ))}
@@ -402,10 +487,13 @@ export default function TVPage() {
       <ScreenShell>
         <header className="surface glass space-y-6 text-center">
           <span className="pill inline-flex">Game Complete</span>
-          <h1 className="heading text-5xl tracking-[0.24em]">Final Reckoning</h1>
+          <h1 className="heading text-5xl tracking-[0.24em]">
+            Final Reckoning
+          </h1>
           {winner ? (
             <p className="text-lg text-[rgba(203,213,225,0.8)]">
-              Champion: {winner.name} · {Number(scores[winner.id] ?? 0).toLocaleString()} pts
+              Champion: {winner.name} ·{" "}
+              {Number(scores[winner.id] ?? 0).toLocaleString()} pts
             </p>
           ) : (
             <p className="text-lg text-[rgba(203,213,225,0.8)]">
@@ -432,7 +520,11 @@ export default function TVPage() {
               >
                 <div>
                   <p className="text-sm uppercase tracking-[0.2em] text-[rgba(148,163,184,0.65)]">
-                    {player.isGhost ? "Eliminated" : index === 0 ? "Champion" : `#${index + 1}`}
+                    {player.isGhost
+                      ? "Eliminated"
+                      : index === 0
+                      ? "Champion"
+                      : `#${index + 1}`}
                   </p>
                   <p className="text-2xl font-semibold text-[rgba(247,249,252,0.95)]">
                     {player.name}
@@ -477,7 +569,10 @@ function DisplayLink({
       <p className="text-xs uppercase tracking-[0.2em] text-[rgba(148,163,184,0.7)]">
         {label}
       </p>
-      <p className="font-mono text-2xl tracking-widest text-[rgba(247,249,252,0.95)]" title={value}>
+      <p
+        className="font-mono text-2xl tracking-widest text-[rgba(247,249,252,0.95)]"
+        title={value}
+      >
         {value}
       </p>
       <p className="text-xs text-[rgba(148,163,184,0.6)]">{helper}</p>
