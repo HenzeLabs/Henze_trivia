@@ -592,7 +592,7 @@ class GameRoom {
           this.transitionTo(GameState.ASKING);
         }
       },
-      this.config.roundEndDelayMs
+      5000 // 5 seconds to see results before next question
     );
   }
 
