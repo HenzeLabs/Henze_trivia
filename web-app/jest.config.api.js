@@ -18,5 +18,4 @@ module.exports = {
   testTimeout: 30000, // API tests may take longer
   // Transform ESM modules
   transform: {},
-  extensionsToTreatAsEsm: ['.js'],
 };

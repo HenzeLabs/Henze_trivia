@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Henze Trivia - Multi-Player Simulator</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .controls {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: white;
+            color: #764ba2;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .player-frame {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .player-status {
+            padding: 5px 10px;
+            background: rgba(76, 175, 80, 0.8);
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            background: white;
+        }
+        
+        .tv-section {
+            margin-bottom: 30px;
+        }
+        
+        .tv-frame {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 15px;
+            height: 700px;
+        }
+        
+        .info-box {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 8px 15px;
+            background: rgba(76, 175, 80, 0.8);
+            border-radius: 20px;
+            margin: 5px;
+        }
+        
+        .pin-display {
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 18px;
+            display: inline-block;
+        }
+        
+        #log {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Henze Trivia - Multi-Player Simulator</h1>
+        
+        <div class="info-box">
+            <h3>📋 Test Configuration</h3>
+            <span class="status">Server: http://localhost:3000</span>
+            <span class="status">Players: 4</span>
+            <span class="status">Rounds: 10</span>
+            <div style="margin-top: 10px;">
+                <strong>HOST_PIN:</strong> 
+                <span class="pin-display">2bbc685ecbea2287</span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button onclick="openAllPlayers()">🚀 Launch All Players</button>
+            <button onclick="refreshAll()">🔄 Refresh All</button>
+            <button onclick="startAutoPlay()">🤖 Start Auto-Play</button>
+            <button onclick="stopAutoPlay()">⏹️ Stop Auto-Play</button>
+            <button onclick="checkStatus()">📊 Check Status</button>
+        </div>
+        
+        <div class="tv-section">
+            <h2>📺 TV Display</h2>
+            <div class="tv-frame">
+                <iframe id="tv" src="http://localhost:3000/tv" title="TV Display"></iframe>
+            </div>
+        </div>
+        
+        <div class="players-grid">
+            <div class="player-frame">
+                <div class="player-header">
+                    <span class="player-name">👤 Player 1: Alice</span>
+                    <span class="player-status">Ready</span>
+                </div>
+                <iframe id="player1" src="about:blank" title="Player 1"></iframe>
+            </div>
+            
+            <div class="player-frame">
+                <div class="player-header">
+                    <span class="player-name">👤 Player 2: Bob</span>
+                    <span class="player-status">Ready</span>
+                </div>
+                <iframe id="player2" src="about:blank" title="Player 2"></iframe>
+            </div>
+            
+            <div class="player-frame">
+                <div class="player-header">
+                    <span class="player-name">👤 Player 3: Charlie</span>
+                    <span class="player-status">Ready</span>
+                </div>
+                <iframe id="player3" src="about:blank" title="Player 3"></iframe>
+            </div>
+            
+            <div class="player-frame">
+                <div class="player-header">
+                    <span class="player-name">👤 Player 4: Diana</span>
+                    <span class="player-status">Ready</span>
+                </div>
+                <iframe id="player4" src="about:blank" title="Player 4"></iframe>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>📊 Activity Log</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+    
+    <script>
+        const playerNames = ['Alice', 'Bob', 'Charlie', 'Diana'];
+        const hostPin = '2bbc685ecbea2287';
+        let autoPlayInterval;
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+            
+            // Keep only last 10 entries
+            while (logDiv.children.length > 10) {
+                logDiv.removeChild(logDiv.lastChild);
+            }
+        }
+        
+        function openAllPlayers() {
+            log('🚀 Opening all player windows...');
+            
+            for (let i = 1; i <= 4; i++) {
+                const iframe = document.getElementById(`player${i}`);
+                iframe.src = 'http://localhost:3000';
+                log(`✓ Player ${i} (${playerNames[i-1]}) loaded`);
+            }
+            
+            setTimeout(() => {
+                log('✅ All players ready! You can now:');
+                log('1. Enter names manually in each window');
+                log('2. Join the lobby');
+                log('3. Start the game with PIN: ' + hostPin);
+            }, 2000);
+        }
+        
+        function refreshAll() {
+            log('🔄 Refreshing all windows...');
+            
+            document.getElementById('tv').src = 'http://localhost:3000/tv';
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`player${i}`).src = 'http://localhost:3000';
+            }
+            
+            log('✅ All windows refreshed');
+        }
+        
+        function startAutoPlay() {
+            log('🤖 Starting auto-play mode...');
+            log('⚠️ Note: Auto-play requires the userscript to be installed');
+            
+            // This would trigger automated playing if the userscript is installed
+            autoPlayInterval = setInterval(() => {
+                // Check game state and auto-answer
+                log('📡 Auto-play tick...');
+            }, 5000);
+        }
+        
+        function stopAutoPlay() {
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                log('⏹️ Auto-play stopped');
+            }
+        }
+        
+        function checkStatus() {
+            log('📊 Checking game status...');
+            
+            // Check if server is responding
+            fetch('http://localhost:3000/healthz')
+                .then(res => res.json())
+                .then(data => {
+                    log('✅ Server status: OK');
+                    log(`Server timestamp: ${new Date(data.timestamp).toLocaleTimeString()}`);
+                })
+                .catch(err => {
+                    log('❌ Server not responding');
+                });
+        }
+        
+        // Auto-load on page load
+        window.addEventListener('load', () => {
+            log('🎮 Henze Trivia Multi-Player Simulator Ready');
+            log('📺 TV Display loaded');
+            log('Click "Launch All Players" to begin');
+        });
+    </script>
+</body>
+</html>

@@ -173,7 +173,7 @@ app
         const lastCall = rateLimits.get(socket.id) || 0;
         if (now - lastCall < RATE_LIMIT_MS) {
           if (cb && typeof cb === "function") {
-            cb({ error: "Rate limit exceeded" });
+            if (cb) cb({ error: "Rate limit exceeded" });
           }
           return false;
         }
@@ -205,7 +205,7 @@ app
               socketId: socket.id,
               errors: validationResult.error.errors,
             });
-            return cb({
+            if (cb) return cb({
               error: "Invalid payload",
               details: validationResult.error.errors,
             });
@@ -224,7 +224,7 @@ app
             players: Array.from(gameRoom.players.values()).map((p) => p.name),
           });
 
-          cb({
+          if (cb) cb({
             success: true,
             playerId: player.playerId,
             token: gameRoom.token,
@@ -243,7 +243,7 @@ app
             socketId: socket.id,
             payload,
           });
-          cb({ success: false, error: e.message || "Join failed" });
+          if (cb) cb({ success: false, error: e.message || "Join failed" });
         }
       });
 
@@ -257,7 +257,7 @@ app
           // Validate payload
           const validationResult = validation.startSchema.safeParse(payload);
           if (!validationResult.success) {
-            return cb({
+            if (cb) return cb({
               error: "Invalid payload",
               details: validationResult.error.errors,
             });
@@ -265,20 +265,20 @@ app
 
           // Verify token
           if (payload.token !== gameRoom.token) {
-            return cb({ error: "Invalid token" });
+            if (cb) return cb({ error: "Invalid token" });
           }
 
           // Start game
           gameRoom.startGame();
 
-          cb({ success: true });
+          if (cb) cb({ success: true });
           broadcastGameState();
         } catch (e) {
           logger.error(`Start error`, {
             error: e.message,
             socketId: socket.id,
           });
-          cb({ success: false, error: e.message || "Start failed" });
+          if (cb) cb({ success: false, error: e.message || "Start failed" });
         }
       });
 
@@ -292,7 +292,7 @@ app
           // Validate payload
           const validationResult = validation.answerSchema.safeParse(payload);
           if (!validationResult.success) {
-            return cb({
+            if (cb) return cb({
               error: "Invalid payload",
               details: validationResult.error.errors,
             });
@@ -300,26 +300,26 @@ app
 
           // Verify token
           if (payload.token !== gameRoom.token) {
-            return cb({ error: "Invalid token" });
+            if (cb) return cb({ error: "Invalid token" });
           }
 
           // Get player
           const player = gameRoom.getPlayer(socket.id);
           if (!player) {
-            return cb({ error: "Player not found" });
+            if (cb) return cb({ error: "Player not found" });
           }
 
           // Submit answer (now async with mutex)
           await gameRoom.submitAnswer(player.id, payload.answer);
 
-          cb({ success: true });
+          if (cb) cb({ success: true });
           broadcastGameState();
         } catch (e) {
           logger.error(`Answer error`, {
             error: e.message,
             socketId: socket.id,
           });
-          cb({ success: false, error: e.message || "Answer failed" });
+          if (cb) cb({ success: false, error: e.message || "Answer failed" });
         }
       });
 
@@ -332,26 +332,26 @@ app
         try {
           // Verify token
           if (payload.token !== gameRoom.token) {
-            return cb({ error: "Invalid token" });
+            if (cb) return cb({ error: "Invalid token" });
           }
 
           // Get player
           const player = gameRoom.getPlayer(socket.id);
           if (!player) {
-            return cb({ error: "Player not found" });
+            if (cb) return cb({ error: "Player not found" });
           }
 
           // Vote question as funny
           gameRoom.voteQuestionFunny(player.id);
 
-          cb({ success: true });
+          if (cb) cb({ success: true });
           broadcastGameState();
         } catch (e) {
           logger.error(`Laugh vote error`, {
             error: e.message,
             socketId: socket.id,
           });
-          cb({ success: false, error: e.message || "Laugh vote failed" });
+          if (cb) cb({ success: false, error: e.message || "Laugh vote failed" });
         }
       });
 
@@ -365,7 +365,7 @@ app
           // Validate payload
           const validationResult = validation.resetSchema.safeParse(payload);
           if (!validationResult.success) {
-            return cb({
+            if (cb) return cb({
               error: "Invalid payload",
               details: validationResult.error.errors,
             });
@@ -373,20 +373,20 @@ app
 
           // Verify token
           if (payload.token !== gameRoom.token) {
-            return cb({ error: "Invalid token" });
+            if (cb) return cb({ error: "Invalid token" });
           }
 
           // Reset game
           gameRoom.reset();
 
-          cb({ success: true });
+          if (cb) cb({ success: true });
           broadcastGameState();
         } catch (e) {
           logger.error(`Reset error`, {
             error: e.message,
             socketId: socket.id,
           });
-          cb({ success: false, error: e.message || "Reset failed" });
+          if (cb) cb({ success: false, error: e.message || "Reset failed" });
         }
       });
 
@@ -398,7 +398,7 @@ app
           // Validate payload
           const validationResult = validation.restoreSchema.safeParse(payload);
           if (!validationResult.success) {
-            return cb({
+            if (cb) return cb({
               error: "Invalid payload",
               details: validationResult.error.errors,
             });
@@ -407,7 +407,7 @@ app
           // Verify token
           if (payload.token !== gameRoom.token) {
             if (cb && typeof cb === "function") {
-              return cb({ error: "Invalid token or session expired" });
+              if (cb) return cb({ error: "Invalid token or session expired" });
             }
             return;
           }
@@ -415,7 +415,7 @@ app
           // For now, just return current game state
           // TODO: Implement proper session restoration if needed
           if (cb && typeof cb === "function") {
-            cb({ success: true, game: gameRoom.getGameState() });
+            if (cb) cb({ success: true, game: gameRoom.getGameState() });
           }
         } catch (e) {
           logger.error(`Restore error`, {
@@ -423,7 +423,7 @@ app
             socketId: socket.id,
           });
           if (cb && typeof cb === "function") {
-            cb({ success: false, error: e.message || "Restore failed" });
+            if (cb) cb({ success: false, error: e.message || "Restore failed" });
           }
         }
       });

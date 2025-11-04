@@ -4,6 +4,7 @@ module.exports = {
   testPathIgnorePatterns: [
     "/node_modules/",
     "player.ui.test.js", // Playwright test - run separately
+    "production.trivia.test.js", // Playwright test - run separately
     "api.game.test.js", // Requires Next.js with experimental VM modules
     "api.game.coreflows.test.js", // Requires Next.js with experimental VM modules
   ],

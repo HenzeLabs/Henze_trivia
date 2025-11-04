@@ -90,6 +90,20 @@ export default function Home() {
       });
   }, [players, scores, lives, ghosts, playerId, maxLivesState]);
 
+  const questionIdentity = useMemo(() => {
+    if (!currentQuestion) return "";
+    const base = currentQuestion.question || currentQuestion.text || "";
+    return [currentQuestion.round, currentQuestion.questionNumber, base]
+      .filter(Boolean)
+      .join("-");
+  }, [currentQuestion]);
+
+  useEffect(() => {
+    if (!questionIdentity) return;
+    setSelectedAnswer(null);
+    setIsSubmitting(false);
+  }, [questionIdentity]);
+
   useEffect(() => {
     setHasMounted(true);
     // Note: Auto-restore from localStorage is disabled to prevent "Name already taken" errors

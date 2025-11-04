@@ -6,7 +6,7 @@ export async function GET(): Promise<Response> {
   // Path to the question generator script
   const scriptPath = path.resolve(
     process.cwd(),
-    "../../utils/question_generator.py"
+    "../utils/question_generator.py"
   );
 
   return new Promise<Response>((resolve) => {

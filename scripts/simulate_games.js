@@ -44,7 +44,7 @@ class VirtualPlayer {
 
   async connect() {
     return new Promise((resolve, reject) => {
-      this.socket = io(`${CONFIG.serverUrl}/player`, {
+      this.socket = io(CONFIG.serverUrl, {
         reconnection: false,
         timeout: 5000,
       });
