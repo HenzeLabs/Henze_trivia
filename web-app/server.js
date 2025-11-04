@@ -27,8 +27,8 @@ const logger = require("./logger");
 const validation = require("./validation");
 
 const dev = process.env.NODE_ENV !== "production";
-// Use environment hostname if available, fallback to platform defaults
-const hostname = process.env.HOSTNAME || (dev ? "localhost" : "0.0.0.0");
+// Render requires binding to 0.0.0.0 and uses PORT 10000
+const hostname = "0.0.0.0";
 const port = (() => {
   const portEnv = process.env.PORT || "3000";
   const parsed = parseInt(portEnv, 10);
