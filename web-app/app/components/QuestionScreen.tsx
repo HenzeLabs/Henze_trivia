@@ -196,17 +196,17 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
   })();
 
   return (
-    <div className="relative min-h-dvh w-full px-4 py-6 sm:py-10 md:py-12">
+    <div className="relative min-h-dvh w-full px-3 py-4 sm:px-4 sm:py-6 md:py-12">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-40 left-[12%] h-[420px] w-[420px] rounded-full bg-[rgba(34,211,238,0.12)] blur-[190px]" />
         <div className="absolute -bottom-44 right-[10%] h-[520px] w-[520px] rounded-full bg-[rgba(244,63,94,0.12)] blur-[210px]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-5 sm:gap-6 md:gap-8">
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-4 sm:gap-6 md:gap-8">
         {offlineBanner}
 
-        <header className="surface space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <header className="surface space-y-3 sm:space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="pill">Round {currentQuestion.round ?? "–"}</span>
@@ -222,24 +222,24 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
                   </span>
                 )}
               </div>
-              <h1 className="heading text-2xl sm:text-3xl md:text-4xl">
+              <h1 className="heading text-xl sm:text-2xl md:text-3xl lg:text-4xl">
                 {currentQuestion.category || "Question"}
               </h1>
               {isChatQuestion && (
                 <p className="text-xs uppercase tracking-[0.2em] text-[rgba(148,163,184,0.7)]">
-                  Pulled straight from your group chat receipts.
+                  From your group chat receipts
                 </p>
               )}
             </div>
-            <div className="flex flex-col items-end gap-2 text-right">
+            <div className="flex flex-col items-start gap-2 sm:items-end sm:text-right">
               <span className="score-pill">
                 {isReveal
                   ? "Reveal"
                   : playerSelection !== null
-                  ? "Answer locked"
+                  ? "Locked"
                   : isPlayerDead
-                  ? "Spectating"
-                  : "Your move"}
+                  ? "Ghost"
+                  : "Your turn"}
               </span>
               <span className="text-xs uppercase tracking-[0.2em] text-[rgba(148,163,184,0.7)]">
                 {currentQuestion.round ?? "–"}/{totalRounds} · {totalAlive} alive
@@ -260,19 +260,19 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
           </div>
         </header>
 
-        <section className="glass rounded-[18px] border border-[rgba(255,255,255,0.06)] px-5 py-7 space-y-3 sm:px-6 sm:py-8 sm:space-y-4">
+        <section className="glass rounded-[14px] sm:rounded-[18px] border border-[rgba(255,255,255,0.06)] px-4 py-5 space-y-3 sm:px-6 sm:py-7 sm:space-y-4">
           <p className="subtitle uppercase tracking-[0.2em] text-xs text-[rgba(148,163,184,0.72)]">
             Question {currentQuestion.questionNumber ?? currentQuestion.round ?? "–"}
           </p>
-          <h2 className="heading text-2xl sm:text-3xl leading-tight">
+          <h2 className="heading text-lg sm:text-xl md:text-2xl lg:text-3xl leading-tight">
             {currentQuestion.text || currentQuestion.question}
           </h2>
           <p className="text-sm text-[rgba(203,213,225,0.78)]">
-            Choose wisely—every wrong guess burns a life.
+            Choose wisely—wrong answers cost lives
           </p>
         </section>
 
-        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
           {currentQuestion.options?.map((option, index) => {
             const isSelected = playerSelection === index;
             const isCorrect = typeof correctIdx === "number" && correctIdx === index;
@@ -301,34 +301,34 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
                 type="button"
                 onClick={() => handleSelect(index)}
                 disabled={selectionLocked}
-                className={`flex items-start gap-3 sm:gap-4 rounded-[14px] border px-4 py-4 sm:px-6 sm:py-5 text-left text-base sm:text-lg transition-all duration-200 min-h-[60px] active:scale-[0.98] ${tone}`}
+                className={`flex items-start gap-3 sm:gap-4 rounded-[12px] sm:rounded-[14px] border px-4 py-4 sm:px-5 sm:py-5 text-left text-sm sm:text-base lg:text-lg transition-all duration-200 min-h-[64px] sm:min-h-[64px] active:scale-[0.98] ${tone}`}
                 aria-pressed={isSelected}
               >
-                <span className="heading text-xl sm:text-2xl flex-shrink-0">
+                <span className="heading text-lg sm:text-xl lg:text-2xl flex-shrink-0 mt-0.5">
                   {String.fromCharCode(65 + index)}
                 </span>
                 <span className="flex-1 text-[rgba(247,249,252,0.95)] leading-snug">
                   {option}
                 </span>
                 {isReveal && isCorrect && (
-                  <span className="score-pill text-xs">✓</span>
+                  <span className="score-pill text-xs flex-shrink-0">✓</span>
                 )}
               </button>
             );
           })}
         </div>
 
-        <section className="glass rounded-[18px] border border-[rgba(255,255,255,0.06)] px-5 py-5 space-y-3 sm:px-6 sm:py-6">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <section className="glass rounded-[14px] sm:rounded-[18px] border border-[rgba(255,255,255,0.06)] px-4 py-4 space-y-3 sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-semibold text-[rgba(231,234,240,0.9)]">
               {computedWaitingHeadline}
             </p>
             <span className="text-xs uppercase tracking-[0.2em] text-[rgba(148,163,184,0.65)]">
               {remainingAlive > 0
-                ? `${remainingAlive} awaiting judgment`
+                ? `${remainingAlive} pending`
                 : isReveal
-                ? "Answers locked"
-                : "Standing by"}
+                ? "Locked"
+                : "Ready"}
             </span>
           </div>
 
@@ -370,13 +370,13 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
               Players are syncing… stand by.
             </p>
           ) : (
-            <div className="grid gap-2 sm:gap-3 md:grid-cols-2">
+            <div className="grid gap-2 sm:gap-3 lg:grid-cols-2">
               {scoreboard.map((player) => {
                 const isSelf = player.isYou || player.id === playerId;
                 return (
                   <article
                     key={player.id}
-                    className={`rounded-[14px] border px-4 py-4 transition-all duration-200 ${
+                    className={`rounded-[12px] sm:rounded-[14px] border px-3 py-3 sm:px-4 sm:py-4 transition-all duration-200 ${
                       isSelf
                         ? "border-[rgba(63,185,255,0.45)] bg-[rgba(63,185,255,0.12)]"
                         : player.isGhost
@@ -384,31 +384,31 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
                         : "border-[rgba(148,163,184,0.14)] bg-[rgba(9,12,23,0.62)]"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="font-semibold text-[rgba(247,249,252,0.95)]">
+                    <div className="flex items-start justify-between gap-2 sm:gap-3">
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <p className="font-semibold text-sm sm:text-base text-[rgba(247,249,252,0.95)] truncate">
                           {player.name}
-                          {isSelf && <span> · you</span>}
+                          {isSelf && <span className="text-xs"> · you</span>}
                         </p>
                         <p className="text-xs uppercase tracking-[0.18em] text-[rgba(148,163,184,0.6)]">
-                          {player.isGhost ? "Eliminated" : "Alive"}
+                          {player.isGhost ? "Out" : "Alive"}
                         </p>
                       </div>
-                      <span className="badge">
-                        Score {Number(player.score ?? 0).toLocaleString()} pts
+                      <span className="badge text-xs flex-shrink-0">
+                        {Number(player.score ?? 0).toLocaleString()}
                       </span>
                     </div>
-                    <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="mt-2 sm:mt-3 flex items-center justify-between gap-2 sm:gap-3">
                       {player.isGhost ? (
                         <span className="text-xs uppercase tracking-[0.2em] text-[rgba(244,63,94,0.7)]">
-                          Ghosting the arena
+                          Eliminated
                         </span>
                       ) : (
                         <div className="flex items-center gap-1">
                           {Array.from({ length: resolvedMaxLives }).map((_, idx) => (
                             <span
                               key={`${player.id}-life-${idx}`}
-                              className={`h-2.5 w-2.5 rounded-full border ${
+                              className={`h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full border ${
                                 idx < (player.lives ?? resolvedMaxLives)
                                   ? "border-[rgba(244,63,94,0.4)] bg-[rgba(244,63,94,0.7)]"
                                   : "border-[rgba(148,163,184,0.3)] bg-transparent"

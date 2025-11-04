@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
 const joinSchema = z.object({
-  playerName: z.string().min(1).max(20),
+  playerName: z.string().min(1).max(20).regex(/^[a-zA-Z0-9 _-]+$/, "Name must contain only letters, numbers, spaces, dashes, or underscores"),
 });
 
 const startSchema = z.object({

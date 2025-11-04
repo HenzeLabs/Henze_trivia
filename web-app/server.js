@@ -27,9 +27,13 @@ const logger = require("./logger");
 const validation = require("./validation");
 
 const dev = process.env.NODE_ENV !== "production";
-// Always bind to 0.0.0.0 in production (Render sets HOSTNAME to container name)
-const hostname = dev ? "localhost" : "0.0.0.0";
-const port = parseInt(process.env.PORT || "3000", 10);
+// Use environment hostname if available, fallback to platform defaults
+const hostname = process.env.HOSTNAME || (dev ? "localhost" : "0.0.0.0");
+const port = (() => {
+  const portEnv = process.env.PORT || "3000";
+  const parsed = parseInt(portEnv, 10);
+  return isNaN(parsed) ? 3000 : parsed;
+})();
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -145,14 +149,34 @@ app
       });
     });
 
-    io = new Server(server, {
-      cors: {
-        origin: [
+    // Dynamic CORS origins for production deployment
+    const allowedOrigins = (() => {
+      try {
+        if (process.env.ALLOWED_ORIGINS) {
+          return process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+        }
+        // Production fallback: allow any origin if no ALLOWED_ORIGINS set
+        if (!dev) {
+          return true; // Allow all origins in production if not configured
+        }
+        return [
           "http://localhost:3000",
           "http://127.0.0.1:3000",
           "http://localhost:3001",
           "http://127.0.0.1:3001",
-        ],
+        ];
+      } catch (e) {
+        logger.warn("Invalid ALLOWED_ORIGINS format, using fallback", { error: e.message });
+        return dev ? [
+          "http://localhost:3000",
+          "http://127.0.0.1:3000",
+        ] : true;
+      }
+    })();
+
+    io = new Server(server, {
+      cors: {
+        origin: allowedOrigins,
         methods: ["GET", "POST"],
         credentials: true,
       },
@@ -356,6 +380,37 @@ app
       });
 
       // ========================================================================
+      // PLAYER: FINAL (determine survivor)
+      // ========================================================================
+      socket.on("player:final", async (payload, cb) => {
+        if (!rateLimitCheck(cb)) return;
+
+        try {
+          // Verify token
+          if (payload.token !== gameRoom.token) {
+            if (cb) return cb({ error: "Invalid token" });
+          }
+
+          // Only allow in final state
+          if (gameRoom.getState() !== "GAME_END") {
+            if (cb) return cb({ error: "Game not in final state" });
+          }
+
+          // Reset to lobby for new game
+          gameRoom.reset();
+
+          if (cb) cb({ success: true });
+          broadcastGameState();
+        } catch (e) {
+          logger.error(`Final error`, {
+            error: e.message,
+            socketId: socket.id,
+          });
+          if (cb) cb({ success: false, error: e.message || "Final failed" });
+        }
+      });
+
+      // ========================================================================
       // PLAYER: RESET GAME
       // ========================================================================
       socket.on("player:reset", async (payload, cb) => {
@@ -412,10 +467,32 @@ app
             return;
           }
 
-          // For now, just return current game state
-          // TODO: Implement proper session restoration if needed
-          if (cb && typeof cb === "function") {
+          // Try to restore existing player session
+          const existingPlayer = Array.from(gameRoom.players.values()).find(
+            p => p.id === payload.playerId
+          );
+          
+          if (existingPlayer) {
+            // Update socket mapping for existing player
+            const oldSocketId = Array.from(gameRoom.players.entries())
+              .find(([_, player]) => player.id === payload.playerId)?.[0];
+            
+            if (oldSocketId) {
+              gameRoom.players.delete(oldSocketId);
+            }
+            
+            gameRoom.players.set(socket.id, existingPlayer);
+            
+            logger.info(`Player session restored`, {
+              playerId: payload.playerId,
+              playerName: existingPlayer.name,
+              newSocketId: socket.id
+            });
+            
             if (cb) cb({ success: true, game: gameRoom.getGameState() });
+            broadcastGameState();
+          } else {
+            if (cb) cb({ error: "Player session not found" });
           }
         } catch (e) {
           logger.error(`Restore error`, {

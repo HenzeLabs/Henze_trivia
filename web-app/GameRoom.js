@@ -157,14 +157,11 @@ class GameRoom {
 
   /**
    * Add a player to the game
-   * @throws {Error} If game not in LOBBY or player limit reached
+   * @throws {Error} If player limit reached
    */
   addPlayer(socketId, playerName, socket) {
-    if (this.state !== GameState.LOBBY) {
-      throw new Error("Cannot join game in progress");
-    }
-
-    if (this.players.size >= this.config.maxPlayers) {
+    // Allow rejoining during game, but not new players
+    if (this.state !== GameState.LOBBY && this.players.size >= this.config.maxPlayers) {
       throw new Error(`Game is full (max ${this.config.maxPlayers} players)`);
     }
 
@@ -186,12 +183,19 @@ class GameRoom {
       role: "player", // default role, can be changed later
     });
 
-    this.scores.set(playerId, 0);
-    this.lives.set(playerId, this.config.maxLives);
+    // Only initialize scores/lives if not already set (for rejoining players)
+    if (!this.scores.has(playerId)) {
+      this.scores.set(playerId, 0);
+    }
+    if (!this.lives.has(playerId)) {
+      this.lives.set(playerId, this.config.maxLives);
+    }
 
-    logger.player(`Player joined: ${playerName}`, {
+    logger.player(`Player joined`, {
+      playerName: playerName.replace(/[\r\n\t]/g, ''),
       playerId,
       totalPlayers: this.players.size,
+      gameState: this.state
     });
 
     return { playerId, playerName };
@@ -203,11 +207,19 @@ class GameRoom {
   removePlayer(socketId) {
     const player = this.players.get(socketId);
     if (player) {
-      logger.player(`Player left: ${player.name}`, {
+      logger.player(`Player left`, {
+        playerName: player.name.replace(/[\r\n\t]/g, ''),
         playerId: player.id,
         remainingPlayers: this.players.size - 1,
       });
+      
+      // Clean up all player data
       this.players.delete(socketId);
+      this.scores.delete(player.id);
+      this.lives.delete(player.id);
+      this.ghosts.delete(player.id);
+      this.answers.delete(player.id);
+      this.laughVotes.delete(player.id);
 
       // Clean up if all players leave
       if (this.players.size === 0) {
@@ -244,7 +256,8 @@ class GameRoom {
       (p) => p.id === playerId
     );
     if (player) {
-      logger.warn(`Player eliminated: ${player.name}`, {
+      logger.warn(`Player eliminated`, {
+        playerName: player.name.replace(/[\r\n\t]/g, ''),
         playerId,
         alivePlayers: this.getAlivePlayers().length - 1,
       });
@@ -398,10 +411,12 @@ class GameRoom {
           }
 
           // Check if all alive players have answered (atomic check + transition)
-          if (this._checkAllAnswered() && !this.answerMutex) {
-            this.answerMutex = true; // Prevent duplicate transitions
-            this._clearTimer("asking");
-            this.transitionTo(GameState.ANSWERS_LOCKED);
+          if (this._checkAllAnswered()) {
+            if (!this.answerMutex) {
+              this.answerMutex = true; // Prevent duplicate transitions
+              this._clearTimer("asking");
+              this.transitionTo(GameState.ANSWERS_LOCKED);
+            }
           }
 
           resolve();
@@ -489,11 +504,17 @@ class GameRoom {
 
     // Load questions
     if (this.questionPool.length === 0) {
-      this.loadQuestions();
+      const questionCount = this.loadQuestions();
+      if (questionCount === 0) {
+        throw new Error("No questions available - cannot start game");
+      }
     }
 
     // Transition to first question
-    this.nextQuestion();
+    const question = this.nextQuestion();
+    if (!question) {
+      throw new Error("Failed to load first question - cannot start game");
+    }
     this.transitionTo(GameState.ASKING);
   }
 
@@ -506,8 +527,7 @@ class GameRoom {
     });
 
     // Clear all timers
-    this.timers.forEach((timer) => clearTimeout(timer));
-    this.timers.clear();
+    this._clearAllTimers();
 
     // Reset state
     this.state = GameState.LOBBY;
@@ -609,7 +629,11 @@ class GameRoom {
 
   _setTimer(name, callback, delay) {
     this._clearTimer(name);
-    this.timers.set(name, setTimeout(callback, delay));
+    const timerId = setTimeout(() => {
+      this.timers.delete(name); // Auto-cleanup on execution
+      callback();
+    }, delay);
+    this.timers.set(name, timerId);
   }
 
   _clearTimer(name) {
@@ -618,6 +642,11 @@ class GameRoom {
       clearTimeout(timer);
       this.timers.delete(name);
     }
+  }
+
+  _clearAllTimers() {
+    this.timers.forEach((timer) => clearTimeout(timer));
+    this.timers.clear();
   }
 
   // ==========================================================================
@@ -729,12 +758,33 @@ class GameRoom {
       role: p.role || "player",
     }));
 
+    // Map server states to client-expected states
+    const clientState = (() => {
+      switch (this.state) {
+        case GameState.GAME_END: return "final";
+        case GameState.ROUND_END: return "results";
+        default: return this.state;
+      }
+    })();
+
+    const alivePlayers = playerList.filter(p => !p.isGhost);
+    const answeredAlive = Array.from(this.answers.keys()).filter(pid => !this.ghosts.has(pid)).length;
+
     const state = {
       gameId: this.id,
-      state: this.state,
+      state: clientState,
       round: this.currentRound,
       totalRounds: this.config.maxRounds,
+      maxRounds: this.config.maxRounds,
       players: playerList,
+      scores: Object.fromEntries(this.scores),
+      ghosts: Array.from(this.ghosts),
+      alivePlayers,
+      answerSummary: {
+        answeredAlive,
+        totalAlive: alivePlayers.length,
+        allAliveAnswered: answeredAlive >= alivePlayers.length && alivePlayers.length > 0
+      }
     };
 
     // Add question data based on state

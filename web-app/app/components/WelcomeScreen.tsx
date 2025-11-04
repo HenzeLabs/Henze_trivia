@@ -43,19 +43,19 @@ export default function WelcomeScreen({ onJoin }: { onJoin: () => void }) {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
+    <div className="min-h-dvh w-full flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden sm:px-6 sm:py-16">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-20%] left-[10%] w-[480px] h-[480px] bg-[rgba(244,63,94,0.12)] blur-[180px]" />
         <div className="absolute bottom-[-25%] right-[15%] w-[520px] h-[520px] bg-[rgba(34,211,238,0.1)] blur-[200px]" />
       </div>
 
       <div className="surface max-w-4xl w-full text-center fade-in relative z-10">
-        <div className="flex justify-center mb-6">
-          <span className="pill pulse-ring">
+        <div className="flex justify-center mb-4 sm:mb-6">
+          <span className="pill pulse-ring text-xs sm:text-sm">
             Tonight&apos;s Feature · Multiplayer Roast Ritual
           </span>
         </div>
-        <h1 className="heading text-6xl md:text-7xl lg:text-8xl tracking-[0.25em] mb-8 glow-text">
+        <h1 className="heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-[0.25em] mb-6 sm:mb-8 glow-text">
           HENZE TRIVIA
         </h1>
         <div
@@ -97,11 +97,11 @@ export default function WelcomeScreen({ onJoin }: { onJoin: () => void }) {
             </p>
           </div>
         </div>
-        <div className="mt-10 flex flex-col items-center gap-6">
-          <button onClick={onJoin} className="btn-primary px-8 py-4">
+        <div className="mt-8 sm:mt-10 flex flex-col items-center gap-4 sm:gap-6">
+          <button onClick={onJoin} className="btn-primary px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg w-full max-w-xs">
             Enter The Lobby
           </button>
-          <p className="text-xs uppercase tracking-[0.24em] text-[rgba(148,163,184,0.65)]">
+          <p className="text-xs uppercase tracking-[0.24em] text-[rgba(148,163,184,0.65)] px-4 text-center">
             No walk-ins · No gentle mode · No ties
           </p>
         </div>

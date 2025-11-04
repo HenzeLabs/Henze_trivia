@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import io from "socket.io-client";
 import { getSavage, savageWaiting } from "./savageFeedback";
 
 interface LobbyScreenProps {
@@ -14,9 +13,8 @@ interface LobbyScreenProps {
   offlineBanner: React.ReactNode;
 }
 
-const socket = io();
-
 const LobbyScreen: React.FC<LobbyScreenProps> = ({
+  players,
   playerId,
   playerName,
   setPlayerName,
@@ -26,20 +24,13 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
   inputRef,
   offlineBanner,
 }) => {
-  const [players, setPlayers] = useState<any[]>([]);
   const [waitingMsg, setWaitingMsg] = useState(getSavage(savageWaiting));
 
   useEffect(() => {
-    socket.on("game:update", (game: any) => {
-      setPlayers(game.players || []);
-      if (game.state === "LOBBY" && game.players.length > 0) {
-        setWaitingMsg(getSavage(savageWaiting));
-      }
-    });
-    return () => {
-      socket.off("game:update");
-    };
-  }, []);
+    if (players.length > 0) {
+      setWaitingMsg(getSavage(savageWaiting));
+    }
+  }, [players.length]);
 
   const hasJoined = players.some((p) => p.id === playerId);
   const spectatingPlayers = players.filter((p) => p.id !== playerId);

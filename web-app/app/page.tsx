@@ -154,22 +154,19 @@ export default function Home() {
       });
       socketRef.current = socket;
 
-      socket.on("connect", () => {
-        reconnectAttempts = 0;
+      const handleConnect = () => {
+        reconnectAttempts = 0; // Reset on successful connection
         setIsOnline(true);
-        // Note: Session restore is handled in a separate useEffect
-      });
+        // Attempt session restoration if we have saved data
+        const savedPlayerId = localStorage.getItem("henzeTrivia_playerId");
+        const savedToken = localStorage.getItem("henzeTrivia_token");
+        if (savedPlayerId && savedToken && socket.connected) {
+          socket.emit("player:restore", { playerId: savedPlayerId, token: savedToken });
+        }
+      };
 
-      socket.on("disconnect", () => {
+      const handleDisconnect = () => {
         setIsOnline(false);
-
-        // Clear session on disconnect to prevent stale session issues
-        // Keep playerName so user doesn't have to re-enter it
-        setPlayerId("");
-        setGameToken("");
-        localStorage.removeItem("henzeTrivia_playerId");
-        localStorage.removeItem("henzeTrivia_token");
-
         if (isMounted) {
           reconnectAttempts++;
           const delay = Math.min(2000 * Math.pow(2, reconnectAttempts), 15000);
@@ -181,9 +178,9 @@ export default function Home() {
             }
           }, delay);
         }
-      });
+      };
 
-      socket.on("game:update", (data) => {
+      const handleGameUpdate = (data: any) => {
         setGameState(data.state);
         setPlayers(data.players);
         setAlivePlayers(data.alivePlayers || []);
@@ -200,17 +197,20 @@ export default function Home() {
         setMaxLivesState(data.maxLives || 3);
         setAnswerSummary(
           data.answerSummary || {
-            answeredAlive: 0,
-            totalAlive: (data.alivePlayers || []).length,
+            answeredAlive: (data.players || []).filter(
+              (player: any) => !data.ghosts?.includes(player.id) && player.hasAnswered
+            ).length,
+            totalAlive: (data.players || []).filter(
+              (player: any) => !data.ghosts?.includes(player.id)
+            ).length,
             allAliveAnswered: false,
           }
         );
         setGameId(data.gameId);
         setError("");
-      });
+      };
 
-      socket.on("player:joined", (data) => {
-        // Optionally handle join confirmation
+      const handlePlayerJoined = (data: any) => {
         if (data.success && data.playerId && data.token) {
           setPlayerId(data.playerId);
           setGameToken(data.token);
@@ -219,13 +219,19 @@ export default function Home() {
         } else if (data.error) {
           setError(data.error);
         }
-      });
+      };
 
-      socket.on("player:actionResult", (data) => {
+      const handleActionResult = (data: any) => {
         if (!data.success && data.error) {
           setError(data.error);
         }
-      });
+      };
+
+      socket.on("connect", handleConnect);
+      socket.on("disconnect", handleDisconnect);
+      socket.on("game:update", handleGameUpdate);
+      socket.on("player:joined", handlePlayerJoined);
+      socket.on("player:actionResult", handleActionResult);
     };
 
     connectSocket();
@@ -233,6 +239,12 @@ export default function Home() {
     return () => {
       isMounted = false;
       if (socketRef.current) {
+        // Properly cleanup all event listeners
+        socketRef.current.off("connect");
+        socketRef.current.off("disconnect");
+        socketRef.current.off("game:update");
+        socketRef.current.off("player:joined");
+        socketRef.current.off("player:actionResult");
         socketRef.current.disconnect();
         socketRef.current = null;
       }

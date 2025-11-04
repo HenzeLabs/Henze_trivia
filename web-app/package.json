@@ -6,6 +6,7 @@
     "dev": "./kill-ports.sh && node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
+    "start:pm2": "NODE_ENV=production pm2 start server.js --name henze-trivia",
     "test:production": "node test-production.js",
     "lint": "next lint",
     "test": "jest --verbose",
