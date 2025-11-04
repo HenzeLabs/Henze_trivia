@@ -196,13 +196,13 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
   })();
 
   return (
-    <div className="relative min-h-dvh w-full px-4 py-10 sm:py-12">
+    <div className="relative min-h-dvh w-full px-4 py-6 sm:py-10 md:py-12">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-40 left-[12%] h-[420px] w-[420px] rounded-full bg-[rgba(34,211,238,0.12)] blur-[190px]" />
         <div className="absolute -bottom-44 right-[10%] h-[520px] w-[520px] rounded-full bg-[rgba(244,63,94,0.12)] blur-[210px]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-8">
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-5 sm:gap-6 md:gap-8">
         {offlineBanner}
 
         <header className="surface space-y-4">
@@ -222,7 +222,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
                   </span>
                 )}
               </div>
-              <h1 className="heading text-3xl md:text-4xl">
+              <h1 className="heading text-2xl sm:text-3xl md:text-4xl">
                 {currentQuestion.category || "Question"}
               </h1>
               {isChatQuestion && (
@@ -264,7 +264,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
           <p className="subtitle uppercase tracking-[0.2em] text-xs text-[rgba(148,163,184,0.72)]">
             Question {currentQuestion.questionNumber ?? currentQuestion.round ?? "–"}
           </p>
-          <h2 className="heading text-3xl leading-tight sm:text-[2.25rem]">
+          <h2 className="heading text-2xl sm:text-3xl leading-tight">
             {currentQuestion.text || currentQuestion.question}
           </h2>
           <p className="text-sm text-[rgba(203,213,225,0.78)]">
@@ -301,17 +301,17 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({
                 type="button"
                 onClick={() => handleSelect(index)}
                 disabled={selectionLocked}
-                className={`flex items-start gap-4 rounded-[14px] border px-5 py-4 text-left text-base transition-all duration-200 sm:px-6 sm:py-5 sm:text-lg ${tone}`}
+                className={`flex items-start gap-3 sm:gap-4 rounded-[14px] border px-4 py-4 sm:px-6 sm:py-5 text-left text-base sm:text-lg transition-all duration-200 min-h-[60px] active:scale-[0.98] ${tone}`}
                 aria-pressed={isSelected}
               >
-                <span className="heading text-2xl">
+                <span className="heading text-xl sm:text-2xl flex-shrink-0">
                   {String.fromCharCode(65 + index)}
                 </span>
-                <span className="flex-1 text-[rgba(247,249,252,0.95)]">
+                <span className="flex-1 text-[rgba(247,249,252,0.95)] leading-snug">
                   {option}
                 </span>
                 {isReveal && isCorrect && (
-                  <span className="score-pill">Correct</span>
+                  <span className="score-pill text-xs">✓</span>
                 )}
               </button>
             );
