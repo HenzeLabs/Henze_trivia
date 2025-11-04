@@ -4,12 +4,11 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: cd web-app && npm install && npm run build
-    startCommand: cd web-app && npm start
+    rootDir: web-app
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
       - key: ENFORCE_HTTPS
         value: false

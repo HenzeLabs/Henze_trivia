@@ -568,7 +568,7 @@ class GameRoom {
       () => {
         this.transitionTo(GameState.ROUND_END);
       },
-      this.config.roundEndDelayMs
+      3000 // 3 seconds to see reveal
     );
   }
 
@@ -592,7 +592,7 @@ class GameRoom {
           this.transitionTo(GameState.ASKING);
         }
       },
-      5000 // 5 seconds to see results before next question
+      2000 // 2 seconds to see results before next question
     );
   }
 
