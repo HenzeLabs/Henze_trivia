@@ -321,7 +321,7 @@ export default function TVPage() {
           <p className="subtitle uppercase tracking-[0.24em] text-xs text-[rgba(148,163,184,0.7)]">
             Question {currentQuestion.questionNumber ?? round ?? "–"}
           </p>
-          <h1 className="heading text-4xl md:text-5xl leading-tight">
+          <h1 className="heading text-5xl md:text-6xl lg:text-7xl leading-tight max-w-5xl mx-auto">
             {currentQuestion.text || currentQuestion.question}
           </h1>
         </section>
@@ -339,19 +339,24 @@ export default function TVPage() {
             return (
               <div
                 key={`${option}-${index}`}
-                className={`glass rounded-[20px] border px-8 py-6 text-left transition-all duration-200 ${tone}`}
+                className={`glass rounded-[20px] border px-8 py-6 text-left transition-all duration-300 ${tone} ${
+                  isReveal && isCorrect ? 'animate-pulse-once' : ''
+                }`}
               >
                 <div className="flex items-start gap-5">
                   <span
-                    className={`heading text-3xl ${
+                    className={`heading text-4xl ${
                       isCorrect ? "text-[rgba(63,214,165,0.9)]" : ""
                     }`}
                   >
                     {String.fromCharCode(65 + index)}
                   </span>
-                  <p className="text-xl text-[rgba(247,249,252,0.95)] leading-relaxed">
+                  <p className="text-2xl text-[rgba(247,249,252,0.95)] leading-relaxed">
                     {option}
                   </p>
+                  {isReveal && isCorrect && (
+                    <span className="ml-auto text-3xl">✓</span>
+                  )}
                 </div>
               </div>
             );
@@ -360,28 +365,28 @@ export default function TVPage() {
 
         <section className="surface space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <p className="text-lg font-semibold text-[rgba(231,234,240,0.92)]">
+            <p className="text-2xl font-semibold text-[rgba(231,234,240,0.92)]">
               {isReveal
-                ? "Answers revealed"
+                ? "✨ Answers revealed"
                 : answerSummary.allAliveAnswered
-                ? "Locked in—revealing shortly"
-                : "Waiting for the last survivors"}
+                ? "🔒 Locked in—revealing shortly"
+                : "⏳ Waiting for the last survivors"}
             </p>
-            <span className="text-xs uppercase tracking-[0.2em] text-[rgba(148,163,184,0.65)]">
+            <span className="text-sm uppercase tracking-[0.2em] text-[rgba(148,163,184,0.65)]">
               {Math.max(aliveCount - answeredCount, 0)} still deciding
             </span>
           </div>
 
           {isReveal && (
-            <div className="glass rounded-[18px] border border-[rgba(148,163,184,0.12)] px-6 py-5 text-sm text-[rgba(203,213,225,0.85)]">
-              <p className="font-semibold text-[rgba(247,249,252,0.95)]">
-                Correct answer:{" "}
+            <div className="glass rounded-[18px] border border-[rgba(63,214,165,0.3)] bg-[rgba(32,162,119,0.1)] px-6 py-5 text-base text-[rgba(203,213,225,0.85)]">
+              <p className="font-semibold text-[rgba(247,249,252,0.95)] text-xl">
+                ✅ Correct answer:{" "}
                 {typeof correctIdx === "number"
                   ? String.fromCharCode(65 + correctIdx)
                   : "Unknown"}
               </p>
               {currentQuestion.explanation && (
-                <p className="mt-2">{currentQuestion.explanation}</p>
+                <p className="mt-3 text-lg leading-relaxed">{currentQuestion.explanation}</p>
               )}
             </div>
           )}
