@@ -1,6 +1,5 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
 import { ReactNode } from 'react';
 
 // Entrance animations
@@ -40,16 +39,9 @@ export const bounceIn = {
 // Animated components
 export function AnimatedCard({ children, className = '' }: { children: ReactNode, className?: string }) {
   return (
-    <motion.div
-      className={className}
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-    >
+    <div className={`${className} animate-fade-in hover:scale-[1.02] active:scale-[0.98] transition-transform`}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -59,54 +51,37 @@ export function AnimatedButton({ children, onClick, className = '' }: {
   className?: string 
 }) {
   return (
-    <motion.button
-      className={className}
+    <button
+      className={`${className} hover:scale-105 active:scale-95 transition-transform animate-fade-in`}
       onClick={onClick}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }
 
 // Countdown animation
 export function CountdownAnimation({ count }: { count: number }) {
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={count}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: [1, 1.2, 1], opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-8xl font-bold text-white"
-      >
-        {count}
-      </motion.div>
-    </AnimatePresence>
+    <div
+      key={count}
+      className="text-8xl font-bold text-white animate-bounce"
+    >
+      {count}
+    </div>
   );
 }
 
 // Score animation
 export function ScorePopup({ points, show }: { points: number, show: boolean }) {
   return (
-    <AnimatePresence>
+    <>
       {show && (
-        <motion.div
-          initial={{ y: 0, opacity: 1, scale: 0.5 }}
-          animate={{ y: -50, opacity: 0, scale: 1.5 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1 }}
-          className="absolute text-4xl font-bold text-green-400"
-        >
+        <div className="absolute text-4xl font-bold text-green-400 animate-bounce">
           +{points}
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -116,23 +91,14 @@ export function ConfettiEffect() {
   
   return (
     <div className="fixed inset-0 pointer-events-none">
-      {Array.from({ length: 50 }).map((_, i) => (
-        <motion.div
+      {Array.from({ length: 20 }).map((_, i) => (
+        <div
           key={i}
-          className="absolute w-3 h-3 rounded-full"
+          className="absolute w-3 h-3 rounded-full animate-bounce"
           style={{ 
             backgroundColor: colors[i % colors.length],
-            left: `${Math.random() * 100}%`
-          }}
-          initial={{ y: -20, opacity: 1 }}
-          animate={{ 
-            y: window.innerHeight + 20,
-            x: (Math.random() - 0.5) * 200,
-            rotate: Math.random() * 720
-          }}
-          transition={{ 
-            duration: 3 + Math.random() * 2,
-            delay: Math.random() * 0.5
+            left: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 0.5}s`
           }}
         />
       ))}
@@ -143,11 +109,7 @@ export function ConfettiEffect() {
 // Loading spinner
 export function LoadingSpinner() {
   return (
-    <motion.div
-      animate={{ rotate: 360 }}
-      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-      className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full"
-    />
+    <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
   );
 }
 
@@ -155,11 +117,9 @@ export function LoadingSpinner() {
 export function AnimatedProgressBar({ progress }: { progress: number }) {
   return (
     <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden backdrop-blur">
-      <motion.div
-        className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
-        initial={{ width: 0 }}
-        animate={{ width: `${progress}%` }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+      <div
+        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500 ease-out"
+        style={{ width: `${progress}%` }}
       />
     </div>
   );
