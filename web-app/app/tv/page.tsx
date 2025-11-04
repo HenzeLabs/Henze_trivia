@@ -170,8 +170,8 @@ export default function TVPage() {
   const playerCount = players.length;
   const aliveCount = answerSummary.totalAlive ?? alivePlayers.length;
   const answeredCount = answerSummary.answeredAlive ?? 0;
-  const hostDisplay = stripProtocol(hostUrl);
-  const tvDisplay = `${stripProtocol(hostUrl)}/tv`;
+  const hostDisplay = stripProtocol(hostUrl) || "henze-trivia.onrender.com";
+  const tvDisplay = `${stripProtocol(hostUrl) || "henze-trivia.onrender.com"}/tv`;
 
   if (socketError) {
     return (
